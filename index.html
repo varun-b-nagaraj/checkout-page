@@ -1027,7 +1027,7 @@
                 console.group(`%c${consoleMessage}`, 'color: #1a1a1a; font-weight: bold;');
                 if (data instanceof Error) {
                     console.error(data);
-                } else {
+            } else {
                     console.dir(data, { depth: 3, colors: true });
                 }
                 console.groupEnd();
@@ -1042,13 +1042,13 @@
         }
         
         function addToDebugConsole(timestamp, prefix, contextStr, message, data, type) {
-            const debugOutput = document.getElementById('debug-output');
+                const debugOutput = document.getElementById('debug-output');
             if (!debugOutput) return;
             
-            debugLineCount++;
-            const debugLine = document.createElement('div');
-            debugLine.className = 'debug-line';
-            
+                    debugLineCount++;
+                    const debugLine = document.createElement('div');
+                    debugLine.className = 'debug-line';
+                    
             const typeColors = {
                 api: '#00aaff',
                 error: '#ff4444',
@@ -1063,26 +1063,26 @@
             let html = `<span class="debug-timestamp">[${timestamp}]</span> ` +
                       `<span style="color: ${typeColors[type] || '#1a1a1a'};">${prefix}</span> ${contextStr}${message}`;
             
-            if (data) {
+                    if (data) {
                 autoHideDebugMessage(debugOutput.querySelector('.warning'));
                 const dataPreview = formatDataForDisplay(data);
                 html += `<br><pre style="color: #888; margin: 5px 0 0 20px; font-size: 10px; max-height: 150px; overflow-y: auto;">` +
                        `<span style="color: #444; margin-bottom: 5px; font-size: 10px;">━━ ┬ Data Object ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span><br>`+
                        `${JSON.stringify(data, null, 2)}</pre><span style="color: #444; font-size: 9px;">━━ ┴ ${type.toUpperCase()} ────────────────────────────────────────────────────────────────────────────────────────</span><br>`;
-            }
-            
-            debugLine.innerHTML = html;
-            debugOutput.appendChild(debugLine);
-            
-            // Auto-scroll to bottom
-            debugOutput.scrollTop = debugOutput.scrollHeight;
-            
+                    }
+                    
+                    debugLine.innerHTML = html;
+                    debugOutput.appendChild(debugLine);
+                    
+                    // Auto-scroll to bottom
+                    debugOutput.scrollTop = debugOutput.scrollHeight;
+                    
             // Limit to 100 lines for better performance
             if (debugLineCount > 100) {
-                debugOutput.removeChild(debugOutput.firstChild);
-                debugLineCount--;
-            }
-        }
+                        debugOutput.removeChild(debugOutput.firstChild);
+                        debugLineCount--;
+                    }
+                }
         
         function formatDataForDisplay(data) {
             if (!data) return '';
@@ -1335,10 +1335,10 @@
         function initializeEcwidAPI() {
             debug('🔧 Initializing Ecwid API...', null, 'init', 'API_INIT');
             
-            if (window.Ecwid && window.Ecwid.OnAPILoaded) {
+                if (window.Ecwid && window.Ecwid.OnAPILoaded) {
                 debug('📡 Ecwid.OnAPILoaded detected, setting up API...', null, 'api', 'API_SETUP');
                 
-                window.Ecwid.OnAPILoaded.add(function() {
+                    window.Ecwid.OnAPILoaded.add(function() {
                     debug('🎉 Ecwid API loaded and ready!', {
                         storeId: window.Ecwid.getOwnerId ? window.Ecwid.getOwnerId() : 'unknown',
                         apiVersion: window.Ecwid.version || 'unknown',
@@ -1351,9 +1351,9 @@
                         }
                     }, 'success', 'API_READY');
                     
-                    onEcwidReady();
-                });
-            } else {
+                        onEcwidReady();
+                    });
+                } else {
                 debug('⚠️ Ecwid.OnAPILoaded not available, retrying in 1 second...', {
                     hasEcwid: !!window.Ecwid,
                     ecwidKeys: window.Ecwid ? Object.keys(window.Ecwid) : []
@@ -1531,9 +1531,122 @@
         }
         
         // ========================================
+        // LOCALSTORAGE CART RECOVERY SYSTEM
+        // ========================================
+        async function recoverCartFromLocalStorage() {
+            debug('🛒 Attempting to recover cart from localStorage...', null, 'cart', 'LOCALSTORAGE_RECOVERY');
+            
+            try {
+                // Try multiple possible localStorage keys based on your screenshot data
+                const possibleKeys = [
+                    'ecwid-104841648-checkout',  // Main checkout data from your screenshot
+                    'studentCartInfo',           // Student cart info from your screenshot
+                    `ecwid-${CONFIG.storeId}-checkout`,
+                    `PSecwid_${CONFIG.storeId}PScart`,
+                    `PSecwid_${CONFIG.storeId}PScart_expire`
+                ];
+                
+                let cartData = null;
+                let cartId = null;
+                let usedKey = null;
+                
+                // Search through all possible keys
+                for (const key of possibleKeys) {
+                    debug(`🔍 Checking localStorage key: ${key}`, null, 'cart', 'KEY_SEARCH');
+                    
+                    const stored = localStorage.getItem(key);
+                    if (stored) {
+                        debug(`✅ Found data in localStorage`, { key, dataPreview: stored.substring(0, 100) + '...' }, 'cart', 'DATA_FOUND');
+                        
+                        try {
+                            const parsed = JSON.parse(stored);
+                            
+                            // Try to extract cart ID from different possible structures
+                            if (parsed.id) {
+                                cartId = parsed.id;
+                                cartData = parsed;
+                                usedKey = key;
+                                debug(`🎯 Found cart ID: ${cartId}`, { key, cartStructure: Object.keys(parsed) }, 'cart', 'CART_ID_FOUND');
+                                break;
+                            } else if (parsed.cartId) {
+                                cartId = parsed.cartId;
+                                cartData = parsed;
+                                usedKey = key;
+                                debug(`🎯 Found alternate cart ID: ${cartId}`, { key }, 'cart', 'ALT_CART_ID');
+                                break;
+                            } else if (parsed.order && parsed.order.id) {
+                                // Handle nested order structure
+                                cartId = parsed.order.id;
+                                cartData = parsed;
+                                usedKey = key;
+                                debug(`🎯 Found nested cart ID: ${cartId}`, { key }, 'cart', 'NESTED_CART_ID');
+                                break;
+                            }
+                        } catch (parseError) {
+                            debug(`❌ Failed to parse localStorage data for key ${key}`, parseError, 'error', 'PARSE_ERROR');
+                            continue;
+                        }
+                    }
+                }
+                
+                if (!cartId) {
+                    debug('⚠️ No valid cart ID found in localStorage', { 
+                        searchedKeys: possibleKeys,
+                        availableKeys: Object.keys(localStorage).filter(k => k.includes('ecwid') || k.includes('cart'))
+                    }, 'cart', 'NO_CART_ID');
+                    return null;
+                }
+                
+                // Now try to fetch the full cart from Ecwid REST API
+                debug('🌐 Attempting to fetch full cart from Ecwid API', { cartId, apiToken: CONFIG.secretToken.substring(0, 10) + '...' }, 'api', 'API_FETCH');
+                
+                const response = await fetch(`https://app.ecwid.com/api/v3/${CONFIG.storeId}/carts/${cartId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${CONFIG.secretToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    debug('❌ Ecwid API returned error', { 
+                        status: response.status, 
+                        statusText: response.statusText,
+                        cartId: cartId,
+                        error: errorText
+                    }, 'error', 'API_ERROR');
+                    return null;
+                }
+                
+                const fullCart = await response.json();
+                
+                debug('✅ Successfully fetched cart from Ecwid REST API', {
+                    cartId: cartId,
+                    localStorageKey: usedKey,
+                    itemCount: fullCart.items?.length || 0,
+                    cartTotal: fullCart.total || 0,
+                    cartStructure: Object.keys(fullCart)
+                }, 'success', 'CART_RECOVERY_SUCCESS');
+                
+                // Update our debug session
+                debugSession.cartLoads++;
+                trackApiCall(`/api/v3/${CONFIG.storeId}/carts/${cartId}`, 'GET', Date.now());
+                
+                return fullCart;
+                
+            } catch (error) {
+                debug('❌ Error during localStorage cart recovery', {
+                    error: error.message,
+                    stack: error.stack
+                }, 'error', 'RECOVERY_ERROR');
+                return null;
+            }
+        }
+        
+        // ========================================
         // ENHANCED CART MANAGEMENT
         // ========================================
-        function loadCart() {
+        async function loadCart() {
             const startTime = Date.now();
             debug('🛒 Loading cart data...', {
                 autoLoadEnabled: CONFIG.cart.autoLoadOnInit,
@@ -1548,6 +1661,43 @@
                 
                 window.Ecwid.Cart.get(function(cart) {
                     const loadDuration = Date.now() - startTime;
+                    
+                    // Check if Ecwid.Cart.get() returns empty/invalid cart data
+                    if (!cart || !cart.items || cart.items.length === 0) {
+                        debug('⚠️ Ecwid.Cart.get() returned empty cart, attempting localStorage recovery...', {
+                            cartReceived: !!cart,
+                            cartStructure: cart ? Object.keys(cart) : 'null'
+                        }, 'cart', 'EMPTY_CART_RECOVERY');
+                        
+                        // Try localStorage recovery when Ecwid returns empty cart
+                        recoverCartFromLocalStorage().then(recoveredCart => {
+                            if (recoveredCart && recoveredCart.items && recoveredCart.items.length > 0) {
+                                debug('🎉 Successfully recovered cart from localStorage!', {
+                                    recoveredItemCount: recoveredCart.items.length,
+                                    recoveredTotal: recoveredCart.total || 0,
+                                    originalEcwidEmpty: true
+                                }, 'success', 'RECOVERY_SUCCESS');
+                                
+                                checkoutState.cart = recoveredCart;
+                                updateCartDisplay(recoveredCart);
+                                hideLoading();
+                                showAlert('✅ Cart recovered from localStorage backup!', 'success');
+                                
+                                // Send recovered cart status to parent frame
+                                if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                                    sendCartStatusToParent('recovered', recoveredCart);
+                                }
+                            } else {
+                                debug('❌ localStorage recovery also failed', null, 'error', 'RECOVERY_FAILED');
+                                handleEmptyCartState(cart);
+                            }
+                        }).catch(recoveryError => {
+                            debug('❌ localStorage recovery threw error', recoveryError, 'error', 'RECOVERY_ERROR');
+                            handleEmptyCartState(cart);
+                        });
+                        
+                        return;
+                    }
                     
                     debug('✅ Cart loaded successfully', {
                         itemCount: cart?.items?.length || 0,
@@ -1589,44 +1739,74 @@
                     updateCartDisplay(cart);
                     hideLoading();
                     
-                    // Check if cart is empty
-                    if (!cart || !cart.items || cart.items.length === 0) {
-                        debug('⚠️ Cart is empty', {
-                            cartExists: !!cart,
-                            cartStructure: cart ? Object.keys(cart) : 'null',
-                            expectedStructure: ['items', 'subtotal', 'total', 'tax', 'cartId', 'customerEmail']
-                        }, 'cart', 'CART_EMPTY');
-                        
-                        if (CONFIG.cart.showEmptyState) {
-                            showAlert('Your cart is empty. Add items before checking out.', 'info');
-                        }
-                        
-                        // For Lightspeed integration, this empty state might be normal
-                        // Send empty cart status to parent frame
-                        if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
-                            sendCartStatusToParent('empty');
-                        }
-                    } else {
-                        // Cart has items, send cart status to parent frame  
-                        if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
-                            sendCartStatusToParent('loaded', cart);
-                        }
+                    // Send cart status to parent frame  
+                    if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                        sendCartStatusToParent('loaded', cart);
                     }
                     
                 });
             } else {
-                debug('❌ Ecwid Cart API not available', {
+                debug('❌ Ecwid Cart API not available, attempting localStorage recovery...', {
                     hasEcwid: !!window.Ecwid,
                     hasCart: !!window.Ecwid?.Cart,
                     hasGet: !!window.Ecwid?.Cart?.get,
                     availableMethods: window.Ecwid?.Cart ? Object.keys(window.Ecwid.Cart) : []
                 }, 'cart', 'CART_API_ERROR');
                 
+                // When Ecwid API is not available, immediately try localStorage recovery
+                recoverCartFromLocalStorage().then(recoveredCart => {
+                    if (recoveredCart && recoveredCart.items && recoveredCart.items.length > 0) {
+                        debug('🎉 Successfully recovered cart when Ecwid API unavailable!', {
+                            recoveredItemCount: recoveredCart.items.length,
+                            recoveredTotal: recoveredCart.total || 0
+                        }, 'success', 'NO_API_RECOVERY_SUCCESS');
+                        
+                        checkoutState.cart = recoveredCart;
+                        updateCartDisplay(recoveredCart);
                 hideLoading();
-                showAlert('Unable to load cart. The Ecwid Cart API is not available.', 'error');
+                        showAlert('✅ Cart recovered! Ecwid API was unavailable, but loaded from cache.', 'warning');
+                        
+                        // Send recovered cart status to parent frame
+                        if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                            sendCartStatusToParent('recovered', recoveredCart);
+                        }
+                    } else {
+                        debug('❌ localStorage recovery failed when API unavailable', null, 'error', 'NO_API_RECOVERY_FAILED');
+                        hideLoading();
+                        showAlert('❌ Unable to load cart. Both Ecwid API and localStorage recovery failed.', 'error');
+                        
+                        // Attempt to load cart from URL parameters or localStorage as fallback
+                        attemptCartRecovery();
+                    }
+                }).catch(recoveryError => {
+                    debug('❌ localStorage recovery threw error when API unavailable', recoveryError, 'error', 'NO_API_RECOVERY_ERROR');
+                    hideLoading();
+                    showAlert('❌ Critical cart loading error. Check your connection and try again.', 'error');
+                    
+                    // Attempt to load cart from URL parameters or localStorage as fallback
+                    attemptCartRecovery();
+                });
+            }
+            
+            // Helper function to handle empty cart state consistently
+            function handleEmptyCartState(cart) {
+                hideLoading();
                 
-                // Attempt to load cart from URL parameters or localStorage as fallback
-                attemptCartRecovery();
+                debug('⚠️ Cart is empty after all recovery attempts', {
+                    cartExists: !!cart,
+                    cartStructure: cart ? Object.keys(cart) : 'null',
+                    expectedStructure: ['items', 'subtotal', 'total', 'tax', 'cartId', 'customerEmail']
+                }, 'cart', 'CART_EMPTY');
+                
+                if (CONFIG.cart.showEmptyState) {
+                    showAlert('Your cart is empty. Add items before checking out.', 'info');
+                }
+                
+                // For Lightspeed integration, this empty state might be normal
+                // Send empty cart status to parent frame
+                if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                    sendCartStatusToParent('empty');
+                }
             }
         }
         
