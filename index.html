@@ -1537,10 +1537,10 @@
             debug('🛒 Attempting to recover cart from localStorage...', null, 'cart', 'LOCALSTORAGE_RECOVERY');
             
             try {
-                // Try multiple possible localStorage keys based on your screenshot data
+                // Try multiple possibile localStorage keys with studentCartInfo prioritized
                 const possibleKeys = [
-                    'ecwid-104841648-checkout',  // Main checkout data from your screenshot
-                    'studentCartInfo',           // Student cart info from your screenshot
+                    'studentCartInfo',           // ✅ PRIORITIZED: Student cart info (your active cart ID)
+                    'ecwid-104841648-checkout',  // Main checkout data with cart ID jgZJsDvRmBRuKm9F
                     `ecwid-${CONFIG.storeId}-checkout`,
                     `PSecwid_${CONFIG.storeId}PScart`,
                     `PSecwid_${CONFIG.storeId}PScart_expire`
@@ -1562,7 +1562,19 @@
                             const parsed = JSON.parse(stored);
                             
                             // Try to extract cart ID from different possible structures
-                            if (parsed.id) {
+                            if (key === 'studentCartInfo' && parsed.cartId) {
+                                // ✅ SPECIFIC HANDLING: studentCartInfo structure
+                                cartId = parsed.cartId;
+                                cartData = parsed;
+                                usedKey = key;
+                                debug(`🎯 Found studentCartInfo cart ID: ${cartId}`, { 
+                                    cartId: parsed.cartId, 
+                                    storeId: parsed.storeId, 
+                                    email: parsed.email,
+                                    key: key 
+                                }, 'cart', 'STUDENT_CART_ID');
+                                break;
+                            } else if (parsed.id) {
                                 cartId = parsed.id;
                                 cartData = parsed;
                                 usedKey = key;
@@ -1625,7 +1637,9 @@
                     localStorageKey: usedKey,
                     itemCount: fullCart.items?.length || 0,
                     cartTotal: fullCart.total || 0,
-                    cartStructure: Object.keys(fullCart)
+                    cartStructure: Object.keys(fullCart),
+                    isStudentCart: usedKey === 'studentCartInfo',
+                    studentEmail: usedKey === 'studentCartInfo' ? cartData?.email : undefined
                 }, 'success', 'CART_RECOVERY_SUCCESS');
                 
                 // Update our debug session
