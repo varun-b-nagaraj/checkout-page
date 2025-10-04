@@ -1,0 +1,1191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout</title>
+    
+    <style>
+        /* ========================================
+           RESET & BASE STYLES
+           ======================================== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: #ffffff;
+            color: #1a1a1a;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+        
+        /* ========================================
+           LAYOUT
+           ======================================== */
+        .checkout-wrapper {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        
+        .checkout-grid {
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 60px;
+        }
+        
+        @media (max-width: 768px) {
+            .checkout-grid {
+                grid-template-columns: 1fr;
+                gap: 30px;
+            }
+        }
+        
+        /* ========================================
+           TYPOGRAPHY
+           ======================================== */
+        h1 {
+            font-size: 28px;
+            font-weight: 400;
+            margin-bottom: 30px;
+            letter-spacing: -0.5px;
+        }
+        
+        h2 {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 20px;
+            color: #666;
+        }
+        
+        h3 {
+            font-size: 16px;
+            font-weight: 500;
+            margin-bottom: 15px;
+        }
+        
+        /* ========================================
+           FORMS
+           ======================================== */
+        .form-section {
+            margin-bottom: 40px;
+        }
+        
+        .form-row {
+            display: grid;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .form-row.two-col {
+            grid-template-columns: 1fr 1fr;
+        }
+        
+        .form-row.three-col {
+            grid-template-columns: 2fr 1fr 1fr;
+        }
+        
+        .form-group {
+            position: relative;
+        }
+        
+        label {
+            display: block;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        input[type="text"],
+        input[type="email"],
+        input[type="tel"],
+        select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            background: white;
+        }
+        
+        input:focus,
+        select:focus {
+            outline: none;
+            border-color: #1a1a1a;
+        }
+        
+        input::placeholder {
+            color: #999;
+        }
+        
+        /* ========================================
+           RADIO & CHECKBOX
+           ======================================== */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .radio-option {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .radio-option:hover {
+            border-color: #999;
+        }
+        
+        .radio-option.selected {
+            border-color: #1a1a1a;
+            background: #f9f9f9;
+        }
+        
+        .radio-option input[type="radio"] {
+            margin-right: 12px;
+        }
+        
+        .checkbox-group {
+            display: flex;
+            align-items: flex-start;
+            margin: 15px 0;
+        }
+        
+        .checkbox-group input[type="checkbox"] {
+            margin-right: 8px;
+            margin-top: 2px;
+        }
+        
+        /* ========================================
+           BUTTONS
+           ======================================== */
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+        }
+        
+        .btn-primary {
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #333;
+        }
+        
+        .btn-primary:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        
+        .btn-secondary {
+            background: transparent;
+            color: #1a1a1a;
+            border: 1px solid #1a1a1a;
+        }
+        
+        .btn-secondary:hover {
+            background: #f5f5f5;
+        }
+        
+        .btn-text {
+            background: transparent;
+            color: #666;
+            padding: 0;
+            text-decoration: underline;
+        }
+        
+        .btn-text:hover {
+            color: #1a1a1a;
+        }
+        
+        .btn-group {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .btn-full {
+            width: 100%;
+        }
+        
+        /* ========================================
+           CART SUMMARY
+           ======================================== */
+        .cart-summary {
+            background: #f8f8f8;
+            border-radius: 8px;
+            padding: 30px;
+            position: sticky;
+            top: 20px;
+        }
+        
+        .cart-items {
+            border-bottom: 1px solid #e0e0e0;
+            padding-bottom: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .cart-item {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .cart-item-image {
+            width: 60px;
+            height: 60px;
+            background: #f0f0f0;
+            border-radius: 4px;
+            object-fit: cover;
+        }
+        
+        .cart-item-details {
+            flex: 1;
+        }
+        
+        .cart-item-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+        
+        .cart-item-variant {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .cart-item-qty {
+            font-size: 12px;
+            color: #999;
+        }
+        
+        .cart-item-price {
+            text-align: right;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .cart-totals {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .total-line {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+        }
+        
+        .total-line.subtotal {
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .total-line.grand-total {
+            font-size: 16px;
+            font-weight: 600;
+            padding-top: 10px;
+        }
+        
+        /* ========================================
+           PROGRESS INDICATOR
+           ======================================== */
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: #e0e0e0;
+            z-index: 0;
+        }
+        
+        .progress-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .progress-dot {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            background: white;
+            border: 1px solid #e0e0e0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+        
+        .progress-step.active .progress-dot,
+        .progress-step.completed .progress-dot {
+            border-color: #1a1a1a;
+            background: #1a1a1a;
+            color: white;
+        }
+        
+        .progress-label {
+            font-size: 11px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .progress-step.active .progress-label {
+            color: #1a1a1a;
+            font-weight: 600;
+        }
+        
+        /* ========================================
+           ALERTS & MESSAGES
+           ======================================== */
+        .alert {
+            padding: 12px 16px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 14px;
+        }
+        
+        .alert-error {
+            background: #fee;
+            color: #c00;
+            border: 1px solid #fcc;
+        }
+        
+        .alert-info {
+            background: #e3f2fd;
+            color: #1976d2;
+            border: 1px solid #bbdefb;
+        }
+        
+        .alert-success {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid #c8e6c9;
+        }
+        
+        /* ========================================
+           LOADING STATE
+           ======================================== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            display: none;
+        }
+        
+        .loading-overlay.show {
+            display: flex;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 3px solid #f0f0f0;
+            border-top-color: #1a1a1a;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        /* ========================================
+           UTILITIES
+           ======================================== */
+        .hidden {
+            display: none !important;
+        }
+        
+        .text-right {
+            text-align: right;
+        }
+        
+        .text-center {
+            text-align: center;
+        }
+        
+        .mb-0 { margin-bottom: 0; }
+        .mb-1 { margin-bottom: 10px; }
+        .mb-2 { margin-bottom: 20px; }
+        .mb-3 { margin-bottom: 30px; }
+        
+        .mt-0 { margin-top: 0; }
+        .mt-1 { margin-top: 10px; }
+        .mt-2 { margin-top: 20px; }
+        .mt-3 { margin-top: 30px; }
+    </style>
+</head>
+<body>
+    <!-- Loading Overlay -->
+    <div id="loading" class="loading-overlay">
+        <div class="spinner"></div>
+    </div>
+    
+    <!-- Main Checkout Container -->
+    <div class="checkout-wrapper">
+        <div class="checkout-grid">
+            <!-- Left Column - Checkout Form -->
+            <div class="checkout-main">
+                <h1>Checkout</h1>
+                
+                <!-- Progress Bar -->
+                <div class="progress-bar" id="progress-bar">
+                    <div class="progress-step active" data-step="1">
+                        <div class="progress-dot">1</div>
+                        <span class="progress-label">Email</span>
+                    </div>
+                    <div class="progress-step" data-step="2">
+                        <div class="progress-dot">2</div>
+                        <span class="progress-label">Shipping</span>
+                    </div>
+                    <div class="progress-step" data-step="3">
+                        <div class="progress-dot">3</div>
+                        <span class="progress-label">Review</span>
+                    </div>
+                    <div class="progress-step" data-step="4">
+                        <div class="progress-dot">4</div>
+                        <span class="progress-label">Payment</span>
+                    </div>
+                </div>
+                
+                <!-- Alert Messages -->
+                <div id="alert-container"></div>
+                
+                <!-- Step 1: Email -->
+                <div id="step-1" class="checkout-step">
+                    <div class="form-section">
+                        <h2>Email</h2>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="email" id="email" placeholder="Email Address*" required>
+                            </div>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="newsletter">
+                            <label for="newsletter">Email me with news and offers</label>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary btn-full" onclick="proceedToStep2()">
+                            Continue to Shipping
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Step 2: Shipping -->
+                <div id="step-2" class="checkout-step hidden">
+                    <div class="form-section">
+                        <h2>Shipping Address</h2>
+                        <div class="form-row two-col">
+                            <div class="form-group">
+                                <input type="text" id="firstName" placeholder="First Name*" required>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="lastName" placeholder="Last Name*" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" id="address" placeholder="Address*" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="text" id="apartment" placeholder="Apartment, suite, etc. (optional)">
+                            </div>
+                        </div>
+                        <div class="form-row three-col">
+                            <div class="form-group">
+                                <input type="text" id="city" placeholder="City*" required>
+                            </div>
+                            <div class="form-group">
+                                <select id="state" required>
+                                    <option value="">State*</option>
+                                    <option value="CA">California</option>
+                                    <option value="NY">New York</option>
+                                    <option value="TX">Texas</option>
+                                    <!-- Add more states as needed -->
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <input type="text" id="zip" placeholder="ZIP Code*" required>
+                            </div>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <input type="tel" id="phone" placeholder="Phone (optional)">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-section">
+                        <h2>Delivery Method</h2>
+                        <div class="radio-group" id="delivery-options">
+                            <label class="radio-option selected">
+                                <input type="radio" name="delivery" value="shipping" checked>
+                                <div>
+                                    <div>Standard Shipping</div>
+                                    <small style="color: #666;">5-7 business days</small>
+                                </div>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="delivery" value="pickup">
+                                <div>
+                                    <div>Store Pickup</div>
+                                    <small style="color: #666;">Ready in 2 hours</small>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="goToStep(1)">
+                            Back to Email
+                        </button>
+                        <button class="btn btn-primary" onclick="proceedToStep3()">
+                            Continue to Review
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Step 3: Review -->
+                <div id="step-3" class="checkout-step hidden">
+                    <div class="form-section">
+                        <h2>Review Your Order</h2>
+                        <div id="review-content">
+                            <!-- Order review content will be dynamically inserted here -->
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="goToStep(2)">
+                            Back to Shipping
+                        </button>
+                        <button class="btn btn-primary" onclick="proceedToStep4()">
+                            Continue to Payment
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Step 4: Payment -->
+                <div id="step-4" class="checkout-step hidden">
+                    <div class="form-section">
+                        <h2>Payment Method</h2>
+                        <div class="radio-group">
+                            <label class="radio-option selected">
+                                <input type="radio" name="payment" value="card" checked>
+                                <div>Credit Card</div>
+                            </label>
+                            <label class="radio-option">
+                                <input type="radio" name="payment" value="paypal">
+                                <div>PayPal</div>
+                            </label>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            Payment processing will be implemented in the next phase.
+                        </div>
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-secondary" onclick="goToStep(3)">
+                            Back to Review
+                        </button>
+                        <button class="btn btn-primary" onclick="placeOrder()">
+                            Place Order
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Right Column - Cart Summary -->
+            <div class="cart-summary">
+                <h2>Cart Summary</h2>
+                <div id="cart-content">
+                    <div class="cart-items" id="cart-items-container">
+                        <!-- Cart items will be dynamically inserted here -->
+                    </div>
+                    <div class="cart-totals">
+                        <div class="total-line subtotal">
+                            <span>Subtotal</span>
+                            <span id="cart-subtotal">$0.00</span>
+                        </div>
+                        <div class="total-line">
+                            <span>Estimated Tax</span>
+                            <span id="cart-tax">—</span>
+                        </div>
+                        <div class="total-line">
+                            <span>Shipping</span>
+                            <span id="cart-shipping">—</span>
+                        </div>
+                        <div class="total-line grand-total">
+                            <span>Estimated Total</span>
+                            <span id="cart-total">$0.00</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-2">
+                    <small style="color: #666;">As low as $50/month for 48 months at 0% APR.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Ecwid Scripts will be inserted here dynamically -->
+    <div id="ecwid-script-container"></div>
+    
+    <script>
+        // ========================================
+        // CONFIGURATION - UPDATE THESE VALUES
+        // ========================================
+        const CONFIG = {
+            // REQUIRED: Your Ecwid Store ID
+            storeId: 'YOUR_STORE_ID_HERE',  // e.g., '1003'
+            
+            // OPTIONAL: Backend API URL for REST API proxy (if using backend)
+            backendApiUrl: '',  // e.g., 'https://yourserver.com/api'
+            
+            // OPTIONAL: Public token (for direct REST API calls from browser)
+            publicToken: '',  // e.g., 'public_B6mT2teCE55zT2jAeffLjzNJ4se3gfPj'
+            
+            // IMPORTANT: Never put secret tokens here! Only use on backend server
+            
+            // Display settings
+            currency: 'USD',
+            currencySymbol: '$',
+            
+            // Debug mode (shows console logs)
+            debug: true
+        };
+        
+        // ========================================
+        // STATE MANAGEMENT
+        // ========================================
+        const checkoutState = {
+            currentStep: 1,
+            cart: null,
+            customer: {
+                email: null,
+                newsletter: false,
+                firstName: null,
+                lastName: null,
+                phone: null
+            },
+            shipping: {
+                address: null,
+                method: 'shipping',
+                selectedOption: null
+            },
+            payment: {
+                method: 'card'
+            },
+            calculatedTotals: null,
+            orderId: null
+        };
+        
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
+        function log(message, data = null) {
+            if (CONFIG.debug) {
+                console.log(`[Checkout] ${message}`, data || '');
+            }
+        }
+        
+        function showLoading() {
+            document.getElementById('loading').classList.add('show');
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').classList.remove('show');
+        }
+        
+        function showAlert(message, type = 'info') {
+            const container = document.getElementById('alert-container');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type}`;
+            alert.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alert);
+            
+            // Auto-hide after 5 seconds
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                setTimeout(() => alert.remove(), 300);
+            }, 5000);
+        }
+        
+        function formatPrice(amount) {
+            if (typeof amount === 'number') {
+                return `${CONFIG.currencySymbol}${amount.toFixed(2)}`;
+            }
+            return `${CONFIG.currencySymbol}0.00`;
+        }
+        
+        // ========================================
+        // ECWID INITIALIZATION
+        // ========================================
+        function initializeEcwid() {
+            log('Initializing Ecwid...');
+            
+            // Dynamically insert Ecwid script
+            const scriptContainer = document.getElementById('ecwid-script-container');
+            const script = document.createElement('script');
+            script.src = `https://app.ecwid.com/script.js?${CONFIG.storeId}`;
+            script.async = true;
+            scriptContainer.appendChild(script);
+            
+            // Wait for Ecwid to load
+            script.onload = function() {
+                log('Ecwid script loaded');
+                
+                // Initialize when API is ready
+                if (window.Ecwid && window.Ecwid.OnAPILoaded) {
+                    window.Ecwid.OnAPILoaded.add(function() {
+                        log('Ecwid API loaded successfully');
+                        onEcwidReady();
+                    });
+                } else {
+                    log('Ecwid OnAPILoaded not available, retrying...');
+                    setTimeout(initializeEcwid, 1000);
+                }
+            };
+            
+            script.onerror = function() {
+                log('Failed to load Ecwid script');
+                showAlert('Failed to initialize checkout. Please refresh the page.', 'error');
+            };
+        }
+        
+        // ========================================
+        // ECWID API READY HANDLER
+        // ========================================
+        function onEcwidReady() {
+            log('Ecwid API ready, store ID:', window.Ecwid.getOwnerId());
+            
+            // Load existing cart
+            loadCart();
+            
+            // Check for logged-in customer
+            checkCustomerSession();
+            
+            // Listen for cart changes
+            if (window.Ecwid.OnCartChanged) {
+                window.Ecwid.OnCartChanged.add(function(cart) {
+                    log('Cart changed', cart);
+                    updateCartDisplay(cart);
+                });
+            }
+        }
+        
+        // ========================================
+        // CART MANAGEMENT
+        // ========================================
+        function loadCart() {
+            log('Loading cart...');
+            showLoading();
+            
+            if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.get) {
+                window.Ecwid.Cart.get(function(cart) {
+                    log('Cart loaded', cart);
+                    checkoutState.cart = cart;
+                    updateCartDisplay(cart);
+                    hideLoading();
+                    
+                    // Check if cart is empty
+                    if (!cart || !cart.items || cart.items.length === 0) {
+                        showAlert('Your cart is empty. Add items before checking out.', 'info');
+                    }
+                });
+            } else {
+                log('Ecwid Cart API not available');
+                hideLoading();
+                showAlert('Unable to load cart. Please refresh the page.', 'error');
+            }
+        }
+        
+        function updateCartDisplay(cart) {
+            if (!cart) return;
+            
+            const itemsContainer = document.getElementById('cart-items-container');
+            const subtotalEl = document.getElementById('cart-subtotal');
+            const taxEl = document.getElementById('cart-tax');
+            const totalEl = document.getElementById('cart-total');
+            
+            // Clear existing items
+            itemsContainer.innerHTML = '';
+            
+            // Add each item
+            if (cart.items && cart.items.length > 0) {
+                cart.items.forEach(item => {
+                    const cartItem = document.createElement('div');
+                    cartItem.className = 'cart-item';
+                    
+                    const imageUrl = item.product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"%3E%3Crect width="60" height="60" fill="%23f0f0f0"/%3E%3C/svg%3E';
+                    
+                    cartItem.innerHTML = `
+                        <img src="${imageUrl}" alt="${item.product.name}" class="cart-item-image">
+                        <div class="cart-item-details">
+                            <div class="cart-item-name">${item.product.name}</div>
+                            ${item.product.sku ? `<div class="cart-item-variant">SKU: ${item.product.sku}</div>` : ''}
+                            <div class="cart-item-qty">Qty: ${item.quantity}</div>
+                        </div>
+                        <div class="cart-item-price">
+                            ${formatPrice(item.product.price * item.quantity)}
+                        </div>
+                    `;
+                    
+                    itemsContainer.appendChild(cartItem);
+                });
+            } else {
+                itemsContainer.innerHTML = '<p style="text-align: center; color: #999;">No items in cart</p>';
+            }
+            
+            // Update totals
+            subtotalEl.textContent = formatPrice(cart.subtotal || 0);
+            
+            if (cart.tax) {
+                taxEl.textContent = formatPrice(cart.tax);
+            }
+            
+            totalEl.textContent = formatPrice(cart.total || cart.subtotal || 0);
+        }
+        
+        // ========================================
+        // CUSTOMER SESSION
+        // ========================================
+        function checkCustomerSession() {
+            if (window.Ecwid && window.Ecwid.Customer && window.Ecwid.Customer.get) {
+                window.Ecwid.Customer.get(function(customer) {
+                    if (customer && customer.email) {
+                        log('Customer session found', customer);
+                        checkoutState.customer.email = customer.email;
+                        document.getElementById('email').value = customer.email;
+                        
+                        // Pre-fill name if available
+                        if (customer.name) {
+                            const names = customer.name.split(' ');
+                            checkoutState.customer.firstName = names[0] || '';
+                            checkoutState.customer.lastName = names.slice(1).join(' ') || '';
+                        }
+                    }
+                });
+            }
+        }
+        
+        // ========================================
+        // STEP NAVIGATION
+        // ========================================
+        function goToStep(stepNumber) {
+            log(`Going to step ${stepNumber}`);
+            
+            // Hide all steps
+            document.querySelectorAll('.checkout-step').forEach(step => {
+                step.classList.add('hidden');
+            });
+            
+            // Show target step
+            document.getElementById(`step-${stepNumber}`).classList.remove('hidden');
+            
+            // Update progress bar
+            document.querySelectorAll('.progress-step').forEach((step, index) => {
+                if (index < stepNumber - 1) {
+                    step.classList.add('completed');
+                    step.classList.remove('active');
+                } else if (index === stepNumber - 1) {
+                    step.classList.add('active');
+                    step.classList.remove('completed');
+                } else {
+                    step.classList.remove('active', 'completed');
+                }
+            });
+            
+            checkoutState.currentStep = stepNumber;
+            
+            // Scroll to top
+            window.scrollTo(0, 0);
+        }
+        
+        // ========================================
+        // STEP 1: EMAIL
+        // ========================================
+        function proceedToStep2() {
+            const email = document.getElementById('email').value;
+            const newsletter = document.getElementById('newsletter').checked;
+            
+            // Validate email
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                showAlert('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            // Save to state
+            checkoutState.customer.email = email;
+            checkoutState.customer.newsletter = newsletter;
+            
+            // Set email in Ecwid
+            if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.setCustomerEmail) {
+                window.Ecwid.Cart.setCustomerEmail(email, 
+                    function() {
+                        log('Email set successfully');
+                        goToStep(2);
+                    },
+                    function(error) {
+                        log('Failed to set email', error);
+                        goToStep(2); // Continue anyway
+                    }
+                );
+            } else {
+                goToStep(2);
+            }
+        }
+        
+        // ========================================
+        // STEP 2: SHIPPING
+        // ========================================
+        function proceedToStep3() {
+            // Collect shipping information
+            const firstName = document.getElementById('firstName').value;
+            const lastName = document.getElementById('lastName').value;
+            const address = document.getElementById('address').value;
+            const apartment = document.getElementById('apartment').value;
+            const city = document.getElementById('city').value;
+            const state = document.getElementById('state').value;
+            const zip = document.getElementById('zip').value;
+            const phone = document.getElementById('phone').value;
+            
+            // Validate required fields
+            if (!firstName || !lastName || !address || !city || !state || !zip) {
+                showAlert('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            // Save to state
+            checkoutState.customer.firstName = firstName;
+            checkoutState.customer.lastName = lastName;
+            checkoutState.customer.phone = phone;
+            
+            checkoutState.shipping.address = {
+                name: `${firstName} ${lastName}`,
+                street: apartment ? `${address}, ${apartment}` : address,
+                city: city,
+                stateOrProvinceCode: state,
+                postalCode: zip,
+                countryCode: 'US',
+                phone: phone
+            };
+            
+            // Get selected delivery method
+            const deliveryMethod = document.querySelector('input[name="delivery"]:checked').value;
+            checkoutState.shipping.method = deliveryMethod;
+            
+            // If backend is configured, calculate shipping
+            if (CONFIG.backendApiUrl) {
+                calculateShipping();
+            } else {
+                // Proceed without calculation
+                goToStep(3);
+                updateReviewStep();
+            }
+        }
+        
+        // ========================================
+        // STEP 3: REVIEW
+        // ========================================
+        function updateReviewStep() {
+            const reviewContent = document.getElementById('review-content');
+            
+            let html = `
+                <div style="background: #f8f8f8; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+                    <h3>Contact Information</h3>
+                    <p>${checkoutState.customer.email}</p>
+                </div>
+                
+                <div style="background: #f8f8f8; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
+                    <h3>Shipping Address</h3>
+                    <p>
+                        ${checkoutState.customer.firstName} ${checkoutState.customer.lastName}<br>
+                        ${checkoutState.shipping.address.street}<br>
+                        ${checkoutState.shipping.address.city}, ${checkoutState.shipping.address.stateOrProvinceCode} ${checkoutState.shipping.address.postalCode}
+                        ${checkoutState.customer.phone ? `<br>Phone: ${checkoutState.customer.phone}` : ''}
+                    </p>
+                </div>
+                
+                <div style="background: #f8f8f8; padding: 20px; border-radius: 4px;">
+                    <h3>Delivery Method</h3>
+                    <p>${checkoutState.shipping.method === 'pickup' ? 'Store Pickup' : 'Standard Shipping'}</p>
+                </div>
+            `;
+            
+            reviewContent.innerHTML = html;
+        }
+        
+        function proceedToStep4() {
+            goToStep(4);
+        }
+        
+        // ========================================
+        // STEP 4: PAYMENT
+        // ========================================
+        function placeOrder() {
+            log('Placing order...', checkoutState);
+            
+            showAlert('Order placement will be implemented with payment processing.', 'info');
+            
+            // In a real implementation, you would:
+            // 1. Process payment
+            // 2. Call backend to create order via Ecwid REST API
+            // 3. Clear cart
+            // 4. Show confirmation
+        }
+        
+        // ========================================
+        // SHIPPING CALCULATION (Optional - requires backend)
+        // ========================================
+        async function calculateShipping() {
+            if (!CONFIG.backendApiUrl) {
+                log('No backend configured, skipping shipping calculation');
+                return;
+            }
+            
+            showLoading();
+            
+            try {
+                const response = await fetch(`${CONFIG.backendApiUrl}/calculate-order`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: checkoutState.customer.email,
+                        items: prepareItemsForAPI(),
+                        shippingPerson: checkoutState.shipping.address
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to calculate shipping');
+                }
+                
+                const data = await response.json();
+                log('Shipping calculated', data);
+                
+                checkoutState.calculatedTotals = data;
+                
+                // Update display
+                if (data.tax) {
+                    document.getElementById('cart-tax').textContent = formatPrice(data.tax);
+                }
+                if (data.shipping) {
+                    document.getElementById('cart-shipping').textContent = formatPrice(data.shipping);
+                }
+                if (data.total) {
+                    document.getElementById('cart-total').textContent = formatPrice(data.total);
+                }
+                
+            } catch (error) {
+                log('Failed to calculate shipping', error);
+                showAlert('Unable to calculate shipping. Continuing with estimated totals.', 'info');
+            } finally {
+                hideLoading();
+            }
+        }
+        
+        function prepareItemsForAPI() {
+            if (!checkoutState.cart || !checkoutState.cart.items) {
+                return [];
+            }
+            
+            return checkoutState.cart.items.map(item => ({
+                productId: item.product.id,
+                quantity: item.quantity,
+                price: item.product.price,
+                name: item.product.name,
+                sku: item.product.sku
+            }));
+        }
+        
+        // ========================================
+        // EVENT LISTENERS
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            log('DOM loaded, initializing checkout...');
+            
+            // Check configuration
+            if (!CONFIG.storeId || CONFIG.storeId === 'YOUR_STORE_ID_HERE') {
+                showAlert('Please configure your Store ID in the CONFIG section at the top of the script.', 'error');
+                return;
+            }
+            
+            // Initialize Ecwid
+            initializeEcwid();
+            
+            // Add radio option click handlers
+            document.querySelectorAll('.radio-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const radio = this.querySelector('input[type="radio"]');
+                    const group = radio.name;
+                    
+                    // Remove selected class from all options in group
+                    document.querySelectorAll(`.radio-option input[name="${group}"]`).forEach(r => {
+                        r.closest('.radio-option').classList.remove('selected');
+                    });
+                    
+                    // Add selected class to clicked option
+                    this.classList.add('selected');
+                    radio.checked = true;
+                });
+            });
+        });
+    </script>
+</body>
+</html>
