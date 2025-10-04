@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout</title>
+    <title>Checkout - Debug Mode</title>
     
     <style>
         /* ========================================
@@ -106,6 +106,8 @@
         input[type="text"],
         input[type="email"],
         input[type="tel"],
+        input[type="date"],
+        input[type="time"],
         select {
             width: 100%;
             padding: 10px 12px;
@@ -124,6 +126,54 @@
         
         input::placeholder {
             color: #999;
+        }
+        
+        /* ========================================
+           AUTOCOMPLETE DROPDOWN
+           ======================================== */
+        .autocomplete-dropdown {
+            position: relative;
+        }
+        
+        .autocomplete-input {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .autocomplete-results {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 1px solid #d0d0d0;
+            border-top: none;
+            border-radius: 0 0 4px 4px;
+            max-height: 200px;
+            overflow-y: auto;
+            z-index: 1000;
+            display: none;
+        }
+        
+        .autocomplete-results.show {
+            display: block;
+        }
+        
+        .autocomplete-item {
+            padding: 10px 12px;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        
+        .autocomplete-item:hover {
+            background: #f5f5f5;
+        }
+        
+        .autocomplete-item.selected {
+            background: #e3f2fd;
         }
         
         /* ========================================
@@ -168,6 +218,24 @@
         .checkbox-group input[type="checkbox"] {
             margin-right: 8px;
             margin-top: 2px;
+        }
+        
+        .checkbox-group label {
+            margin-bottom: 0;
+            font-weight: normal;
+        }
+        
+        /* ========================================
+           DELIVERY FEE NOTICE
+           ======================================== */
+        .delivery-fee-notice {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            border-radius: 4px;
+            padding: 12px;
+            margin: 15px 0;
+            font-size: 13px;
+            color: #856404;
         }
         
         /* ========================================
@@ -307,6 +375,10 @@
             border-bottom: 1px solid #e0e0e0;
         }
         
+        .total-line.delivery-fee {
+            color: #856404;
+        }
+        
         .total-line.grand-total {
             font-size: 16px;
             font-weight: 600;
@@ -402,6 +474,41 @@
             border: 1px solid #c8e6c9;
         }
         
+        .alert-warning {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffc107;
+        }
+        
+        /* ========================================
+           DEBUG CONSOLE
+           ======================================== */
+        .debug-console {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 400px;
+            max-height: 300px;
+            background: rgba(0, 0, 0, 0.9);
+            color: #0f0;
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-y: auto;
+            z-index: 10000;
+        }
+        
+        .debug-line {
+            margin-bottom: 5px;
+            border-bottom: 1px solid #333;
+            padding-bottom: 5px;
+        }
+        
+        .debug-timestamp {
+            color: #666;
+        }
+        
         /* ========================================
            LOADING STATE
            ======================================== */
@@ -463,6 +570,12 @@
     </style>
 </head>
 <body>
+    <!-- Debug Console (visible in debug mode) -->
+    <div id="debug-console" class="debug-console" style="display: none;">
+        <div style="color: #fff; margin-bottom: 10px;">🐛 DEBUG CONSOLE</div>
+        <div id="debug-output"></div>
+    </div>
+    
     <!-- Loading Overlay -->
     <div id="loading" class="loading-overlay">
         <div class="spinner"></div>
@@ -483,7 +596,7 @@
                     </div>
                     <div class="progress-step" data-step="2">
                         <div class="progress-dot">2</div>
-                        <span class="progress-label">Shipping</span>
+                        <span class="progress-label">Delivery</span>
                     </div>
                     <div class="progress-step" data-step="3">
                         <div class="progress-dot">3</div>
@@ -515,74 +628,114 @@
                     
                     <div class="btn-group">
                         <button class="btn btn-primary btn-full" onclick="proceedToStep2()">
-                            Continue to Shipping
+                            Continue to Delivery
                         </button>
                     </div>
                 </div>
                 
-                <!-- Step 2: Shipping -->
+                <!-- Step 2: Delivery Options -->
                 <div id="step-2" class="checkout-step hidden">
-                    <div class="form-section">
-                        <h2>Shipping Address</h2>
-                        <div class="form-row two-col">
-                            <div class="form-group">
-                                <input type="text" id="firstName" placeholder="First Name*" required>
-                            </div>
-                            <div class="form-group">
-                                <input type="text" id="lastName" placeholder="Last Name*" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <input type="text" id="address" placeholder="Address*" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <input type="text" id="apartment" placeholder="Apartment, suite, etc. (optional)">
-                            </div>
-                        </div>
-                        <div class="form-row three-col">
-                            <div class="form-group">
-                                <input type="text" id="city" placeholder="City*" required>
-                            </div>
-                            <div class="form-group">
-                                <select id="state" required>
-                                    <option value="">State*</option>
-                                    <option value="CA">California</option>
-                                    <option value="NY">New York</option>
-                                    <option value="TX">Texas</option>
-                                    <!-- Add more states as needed -->
-                                </select>
-                            </div>
-                            <div class="form-group">
-                                <input type="text" id="zip" placeholder="ZIP Code*" required>
-                            </div>
-                        </div>
-                        <div class="form-row">
-                            <div class="form-group">
-                                <input type="tel" id="phone" placeholder="Phone (optional)">
-                            </div>
-                        </div>
-                    </div>
-                    
                     <div class="form-section">
                         <h2>Delivery Method</h2>
                         <div class="radio-group" id="delivery-options">
-                            <label class="radio-option selected">
-                                <input type="radio" name="delivery" value="shipping" checked>
+                            <label class="radio-option">
+                                <input type="radio" name="delivery" value="room" onchange="selectDeliveryMethod('room')">
                                 <div>
-                                    <div>Standard Shipping</div>
-                                    <small style="color: #666;">5-7 business days</small>
+                                    <div>Deliver to Room</div>
+                                    <small style="color: #666;">Get it delivered to your classroom</small>
                                 </div>
                             </label>
                             <label class="radio-option">
-                                <input type="radio" name="delivery" value="pickup">
+                                <input type="radio" name="delivery" value="pickup" onchange="selectDeliveryMethod('pickup')">
                                 <div>
                                     <div>Store Pickup</div>
-                                    <small style="color: #666;">Ready in 2 hours</small>
+                                    <small style="color: #666;">Pick up at school store</small>
                                 </div>
                             </label>
+                        </div>
+                        
+                        <!-- Room Delivery Options -->
+                        <div id="room-delivery-options" class="hidden">
+                            <h3>Room Delivery Details</h3>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Room Number / Teacher Name*</label>
+                                    <div class="autocomplete-dropdown">
+                                        <input type="text" 
+                                               id="room-teacher-input" 
+                                               class="autocomplete-input"
+                                               placeholder="Start typing room number or teacher name..."
+                                               oninput="handleRoomTeacherInput(this.value)">
+                                        <div id="room-teacher-results" class="autocomplete-results"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="checkbox-group">
+                                <input type="checkbox" id="teacher-permission">
+                                <label for="teacher-permission">
+                                    I have permission from my teacher to order at this time
+                                </label>
+                            </div>
+                            
+                            <div class="delivery-fee-notice">
+                                <strong>Delivery Fee:</strong> A delivery fee of $0.30 - $0.40 will be added to your order for room delivery.
+                            </div>
+                            
+                            <h3>Payment Method for Room Delivery</h3>
+                            <div class="radio-group">
+                                <label class="radio-option">
+                                    <input type="radio" name="room-payment" value="online">
+                                    <div>
+                                        <div>Pay Online Now</div>
+                                        <small style="color: #666;">Pay with card during checkout</small>
+                                    </div>
+                                </label>
+                                <label class="radio-option">
+                                    <input type="radio" name="room-payment" value="at-delivery">
+                                    <div>
+                                        <div>Pay at Delivery</div>
+                                        <small style="color: #666;">Pay when you receive your order</small>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Store Pickup Options -->
+                        <div id="pickup-options" class="hidden">
+                            <h3>Store Pickup Details</h3>
+                            
+                            <div class="form-row two-col">
+                                <div class="form-group">
+                                    <label>Pickup Date*</label>
+                                    <input type="date" id="pickup-date" min="" required>
+                                </div>
+                                <div class="form-group">
+                                    <label>Pickup Time*</label>
+                                    <select id="pickup-time" required>
+                                        <option value="">Select time</option>
+                                        <option value="8:00 AM">8:00 AM - 8:30 AM</option>
+                                        <option value="8:30 AM">8:30 AM - 9:00 AM</option>
+                                        <option value="12:00 PM">12:00 PM - 12:30 PM (Lunch)</option>
+                                        <option value="12:30 PM">12:30 PM - 1:00 PM (Lunch)</option>
+                                        <option value="3:00 PM">3:00 PM - 3:30 PM</option>
+                                        <option value="3:30 PM">3:30 PM - 4:00 PM</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label>Your Name*</label>
+                                    <input type="text" id="pickup-name" placeholder="Full name" required>
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <strong>Pickup Location:</strong> School Store (Main Building, Room 101)<br>
+                                <strong>Hours:</strong> Mon-Fri 8:00 AM - 4:00 PM
+                            </div>
                         </div>
                     </div>
                     
@@ -607,7 +760,7 @@
                     
                     <div class="btn-group">
                         <button class="btn btn-secondary" onclick="goToStep(2)">
-                            Back to Shipping
+                            Back to Delivery
                         </button>
                         <button class="btn btn-primary" onclick="proceedToStep4()">
                             Continue to Payment
@@ -619,19 +772,12 @@
                 <div id="step-4" class="checkout-step hidden">
                     <div class="form-section">
                         <h2>Payment Method</h2>
-                        <div class="radio-group">
-                            <label class="radio-option selected">
-                                <input type="radio" name="payment" value="card" checked>
-                                <div>Credit Card</div>
-                            </label>
-                            <label class="radio-option">
-                                <input type="radio" name="payment" value="paypal">
-                                <div>PayPal</div>
-                            </label>
+                        <div id="payment-options-container">
+                            <!-- Payment options will be dynamically inserted based on delivery method -->
                         </div>
                         
-                        <div class="alert alert-info">
-                            Payment processing will be implemented in the next phase.
+                        <div class="alert alert-warning">
+                            <strong>Note:</strong> This is a test checkout. Real payment processing is not implemented.
                         </div>
                     </div>
                     
@@ -658,6 +804,10 @@
                             <span>Subtotal</span>
                             <span id="cart-subtotal">$0.00</span>
                         </div>
+                        <div class="total-line delivery-fee hidden" id="delivery-fee-line">
+                            <span>Delivery Fee</span>
+                            <span id="cart-delivery-fee">$0.00</span>
+                        </div>
                         <div class="total-line">
                             <span>Estimated Tax</span>
                             <span id="cart-tax">—</span>
@@ -672,9 +822,6 @@
                         </div>
                     </div>
                 </div>
-                <div class="mt-2">
-                    <small style="color: #666;">As low as $50/month for 48 months at 0% APR.</small>
-                </div>
             </div>
         </div>
     </div>
@@ -684,27 +831,110 @@
     
     <script>
         // ========================================
+        // CRITICAL SECURITY WARNING
+        // ========================================
+        // NEVER put secret tokens in production frontend code!
+        // This is ONLY for testing. Use backend proxy for production.
+        
+        // ========================================
         // CONFIGURATION - UPDATE THESE VALUES
         // ========================================
         const CONFIG = {
-            // REQUIRED: Your Ecwid Store ID
-            storeId: 'YOUR_STORE_ID_HERE',  // e.g., '1003'
+            // REQUIRED: Your Ecwid Store ID (Replace with your actual store ID)
+            storeId: '104841648',  // ⚠️ CHANGE THIS TO YOUR STORE ID
+            // You can find your store ID in the Ecwid admin panel URL: 
+            // https://app.ecwid.com/cpanel/1003/ → storeId = '1003'
             
-            // OPTIONAL: Backend API URL for REST API proxy (if using backend)
-            backendApiUrl: '',  // e.g., 'https://yourserver.com/api'
+            // ⚠️ PUBLIC API TOKEN (Read-only access, safe for frontend use)
+            // Get this from: Ecwid Admin → Settings → API → Generate Public Token
+            publicToken: 'public_sTf78x4mPd527QjB4mBwjknTwkg3Cx7x',  // ⚠️ REPLACE WITH YOUR PUBLIC TOKEN
             
-            // OPTIONAL: Public token (for direct REST API calls from browser)
-            publicToken: '',  // e.g., 'public_B6mT2teCE55zT2jAeffLjzNJ4se3gfPj'
+            // 🚨 SECRET API TOKEN - NEVER USE IN PRODUCTION FRONTEND!
+            // This is ONLY for testing. Move to backend server for production!
+            // Get from: Ecwid Admin → Settings → API → Generate Secret Token  
+            secretToken: 'secret_hYpzu6NFi6SMVyMueEK8Fe5JLFuuzqHC',  // ⚠️ REPLACE WITH YOUR SECRET TOKEN
             
-            // IMPORTANT: Never put secret tokens here! Only use on backend server
+            // Ecwid REST API Base URL (v3)
+            ecwidApiBaseUrl: 'https://app.ecwid.com/api/v3',
+            
+            // Complete API endpoints
+            endpoints: {
+                // Orders API
+                calculateOrder: (storeId) => `https://app.ecwid.com/api/v3/${storeId}/order/calculate`,
+                createOrder: (storeId) => `https://app.ecwid.com/api/v3/${storeId}/orders`,
+                getOrder: (storeId, orderId) => `https://app.ecwid.com/api/v3/${storeId}/orders/${orderId}`,
+                
+                // Products API  
+                getProducts: (storeId) => `https://app.ecwid.com/api/v3/${storeId}/products`,
+                getProduct: (storeId, productId) => `https://app.ecwid.com/api/v3/${storeId}/products/${productId}`,
+                
+                // Customers API
+                getCustomer: (storeId, customerId) => `https://app.ecwid.com/api/v3/${storeId}/customers/${customerId}`,
+                searchCustomers: (storeId) => `https://app.ecwid.com/api/v3/${storeId}/customers`,
+                
+                // Store Profile API
+                getStoreProfile: (storeId) => `https://app.ecwid.com/api/v3/${storeId}/profile`,
+                
+                // Carts API  
+                getAbandonedCart: (storeId, cartId) => `https://app.ecwid.com/api/v3/${storeId}/carts/${cartId}`,
+                
+                // Helper function to build URLs with tokens
+                buildUrl: function(type, storeId, ...params) {
+                    const base = this[type](storeId, ...params);
+                    return base;
+                }
+            },
             
             // Display settings
             currency: 'USD',
             currencySymbol: '$',
+            countryCode: 'US',
+            locale: 'en-US',
             
-            // Debug mode (shows console logs)
-            debug: true
+            // Delivery & Shipping Configuration
+            deliveryFeeMin: 0.30,
+            deliveryFeeMax: 0.40,
+            deliveryFeeDefault: 0.35,
+            
+            // Debug mode (comprehensive logging)
+            debug: true,
+            showDebugConsole: true,
+            logLevels: ['all'], // 'all', 'api', 'state', 'ui', 'cart', 'customer'], // or specific levels
+            
+            // Iframe embedding configuration for Lightspeed e-series
+            iframeEmbedding: {
+                parentOrigin: 'https://yourstore.lightspeedretail.com', // Replace with actual Lightspeed URL
+                allowPostMessage: true,
+                debugPostMessages: true
+            },
+            
+            // Cart management for pre-existing cart retrieval
+            cart: {
+                autoLoadOnInit: true,
+                preserveExisting: true,
+                updateFrequency: 'real-time', // 'real-time', 'on-change', 'manual'
+                showEmptyState: true,
+                allowModifications: true
+            }
         };
+        
+        // ========================================
+        // ROOM/TEACHER DATA (Mock data for testing)
+        // ========================================
+        const ROOM_TEACHER_DATA = [
+            { room: '101', teacher: 'Ms. Johnson', subject: 'Math' },
+            { room: '102', teacher: 'Mr. Smith', subject: 'Science' },
+            { room: '103', teacher: 'Mrs. Davis', subject: 'English' },
+            { room: '201', teacher: 'Mr. Wilson', subject: 'History' },
+            { room: '202', teacher: 'Ms. Brown', subject: 'Art' },
+            { room: '203', teacher: 'Mr. Garcia', subject: 'Spanish' },
+            { room: '301', teacher: 'Mrs. Martinez', subject: 'Physics' },
+            { room: '302', teacher: 'Mr. Anderson', subject: 'Chemistry' },
+            { room: '303', teacher: 'Ms. Taylor', subject: 'Biology' },
+            { room: 'Gym', teacher: 'Coach Thompson', subject: 'PE' },
+            { room: 'Library', teacher: 'Ms. Lee', subject: 'Librarian' },
+            { room: 'Cafeteria', teacher: 'Staff', subject: 'Lunch' }
+        ];
         
         // ========================================
         // STATE MANAGEMENT
@@ -714,41 +944,241 @@
             cart: null,
             customer: {
                 email: null,
-                newsletter: false,
-                firstName: null,
-                lastName: null,
-                phone: null
+                newsletter: false
             },
-            shipping: {
-                address: null,
-                method: 'shipping',
-                selectedOption: null
+            delivery: {
+                method: null, // 'room' or 'pickup'
+                roomTeacher: null,
+                hasTeacherPermission: false,
+                roomPaymentMethod: null, // 'online' or 'at-delivery'
+                pickupDate: null,
+                pickupTime: null,
+                pickupName: null,
+                deliveryFee: 0.35 // Default to middle of range
             },
             payment: {
-                method: 'card'
+                method: null
             },
             calculatedTotals: null,
             orderId: null
         };
         
         // ========================================
-        // UTILITY FUNCTIONS
+        // COMPREHENSIVE DEBUG UTILITIES
         // ========================================
-        function log(message, data = null) {
-            if (CONFIG.debug) {
-                console.log(`[Checkout] ${message}`, data || '');
+        let debugLineCount = 0;
+        let apiCallCount = 0;
+        let debugSession = {
+            startTime: Date.now(),
+            totalApiCalls: 0,
+            totalErrors: 0,
+            cartLoads: 0,
+            customerChecks: 0,
+            stepTransitions: [],
+            apiLog: []
+        };
+        
+        function debug(message, data = null, type = 'info', context = '') {
+            if (!CONFIG.debug) return;
+            
+            const timestamp = new Date().toLocaleTimeString('en-US', { 
+                hour12: false, 
+                hour: '2-digit', 
+                minute: '2-digit', 
+                second: '2-digit',
+                fractionalSecondDigits: 3 
+            });
+            
+            const prefixes = {
+                info: '📝',
+                success: '✅',
+                error: '❌',
+                warning: '⚠️',
+                api: '🌐',
+                state: '📊',
+                cart: '🛒',
+                customer: '👤',
+                payment: '💳',
+                shipping: '🚚',
+                security: '🔒',
+                config: '⚙️',
+                init: '🚀',
+                validation: '✓',
+                step: '🔄'
+            };
+            
+            const prefix = prefixes[type] || '📝';
+            const contextStr = context ? `[${context}] ` : '';
+            const consoleMessage = `[${timestamp}] ${prefix} ${contextStr}${message}`;
+            
+            // Update session stats
+            if (type === 'api') {
+                debugSession.totalApiCalls++;
+            } else if (type === 'error') {
+                debugSession.totalErrors++;
+            } else if (message.toLowerCase().includes('cart')) {
+                debugSession.cartLoads++;
+            } else if (message.toLowerCase().includes('customer')) {
+                debugSession.customerChecks++;
+            }
+            
+            // Enhanced console output with different styling
+            if (data) {
+                console.group(`%c${consoleMessage}`, 'color: #1a1a1a; font-weight: bold;');
+                if (data instanceof Error) {
+                    console.error(data);
+                } else {
+                    console.dir(data, { depth: 3, colors: true });
+                }
+                console.groupEnd();
+            } else {
+                console.log(`%c${consoleMessage}`, 'color: #1a1a1a; font-weight: bold;');
+            }
+            
+            // Debug console UI
+            if (CONFIG.showDebugConsole) {
+                addToDebugConsole(timestamp, prefix, contextStr, message, data, type);
             }
         }
         
+        function addToDebugConsole(timestamp, prefix, contextStr, message, data, type) {
+            const debugOutput = document.getElementById('debug-output');
+            if (!debugOutput) return;
+            
+            debugLineCount++;
+            const debugLine = document.createElement('div');
+            debugLine.className = 'debug-line';
+            
+            const typeColors = {
+                api: '#00aaff',
+                error: '#ff4444',
+                success: '#00aa44',
+                warning: '#ffaa00',
+                cart: '#9966cc',
+                customer: '#ff6600',
+                payment: '#00aa88',
+                shipping: '#6666ff'
+            };
+            
+            let html = `<span class="debug-timestamp">[${timestamp}]</span> ` +
+                      `<span style="color: ${typeColors[type] || '#1a1a1a'};">${prefix}</span> ${contextStr}${message}`;
+            
+            if (data) {
+                autoHideDebugMessage(debugOutput.querySelector('.warning'));
+                const dataPreview = formatDataForDisplay(data);
+                html += `<br><pre style="color: #888; margin: 5px 0 0 20px; font-size: 10px; max-height: 150px; overflow-y: auto;">` +
+                       `<span style="color: #444; margin-bottom: 5px; font-size: 10px;">━━ ┬ Data Object ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━</span><br>`+
+                       `${JSON.stringify(data, null, 2)}</pre><span style="color: #444; font-size: 9px;">━━ ┴ ${type.toUpperCase()} ────────────────────────────────────────────────────────────────────────────────────────</span><br>`;
+            }
+            
+            debugLine.innerHTML = html;
+            debugOutput.appendChild(debugLine);
+            
+            // Auto-scroll to bottom
+            debugOutput.scrollTop = debugOutput.scrollHeight;
+            
+            // Limit to 100 lines for better performance
+            if (debugLineCount > 100) {
+                debugOutput.removeChild(debugOutput.firstChild);
+                debugLineCount--;
+            }
+        }
+        
+        function formatDataForDisplay(data) {
+            if (!data) return '';
+            
+            try {
+                // Handle special data types
+                if (data instanceof Error) {
+                    return data.stack || data.message;
+                }
+                if (data instanceof Date) {
+                    return data.toString();
+                }
+                if (typeof data === 'function') {
+   	            return `[Function: ${data.name || 'anonymous'}]`;
+                }
+                
+                return JSON.stringify(data, null, 2);
+            } catch (e) {
+                return '[Circular reference or non-serializable data]';
+            }
+        }
+
+        function autoHideDebugMessage(element, duration = 4800) {
+            if (element) {
+                element.style.transition = 'opacity 0.3s ease-out';
+                setTimeout(() => {
+                    element.style.opacity = '0';
+                    setTimeout(() => {
+                        if (element.parentNode) {
+                            element.parentNode.removeChild(element);
+                        }
+                    }, 300);
+                }, duration);
+            }
+        }
+        
+        // Debug session monitoring
+        function debugSessionSummary() {
+            const duration = Date.now() - debugSession.startTime;
+            debug(`🧮 Debug Session Summary (${Math.round(duration/1000)}s duration)`, {
+                '📊 Total API Calls': debugSession.totalApiCalls,
+                '❌ Errors': debugSession.totalErrors,
+                '🛒 Cart Loads': debugSession.cartLoads,
+                '👤 Customer Checks': debugSession.customerChecks,
+                '⏱️ Session Duration': `${Math.round(duration/1000)}s`,
+                '📈 Session Stats': {
+                    avgApiCallTime: debugSession.apiLog.length > 0 ? 
+                        Math.round(debugSession.apiLog.reduce((sum, call) => sum + call.duration, 0) / debugSession.apiLog.length) : 0,
+                    currentStep: checkoutState.currentStep,
+                    cartUpdates: debugSession.cartLoads,
+                    successfulOperations: debugSession.totalApiCalls - debugSession.totalErrors
+                }
+            }, 'config', 'SESSION_SUMMARY');
+        }
+        
+        // Performance tracking for API calls
+        function trackApiCall(endpoint, method, startTime) {
+            apiCallCount++;
+            const duration = Date.now() - startTime;
+            
+            debugSession.apiLog.push({
+                endpoint,
+                method,
+                duration,
+                timestamp: new Date()
+            });
+            
+            debug(`🌐 API CALL ${method.toUpperCase()}`, {
+                endpoint: endpoint,
+                duration: `${duration}ms`,
+                callNumber: apiCallCount,
+                avgDuration: Math.round(debugSession.apiLog.reduce((sum, log) => sum + log.duration, 0) / debugSession.apiLog.length)
+            }, 'api', 'API_PERFORMANCE');
+            
+            // Keep only last 20 API calls
+            if (debugSession.apiLog.length > 20) {
+                debugSession.apiLog.shift();
+            }
+        }
+        
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
         function showLoading() {
+            debug('Showing loading overlay');
             document.getElementById('loading').classList.add('show');
         }
         
         function hideLoading() {
+            debug('Hiding loading overlay');
             document.getElementById('loading').classList.remove('show');
         }
         
         function showAlert(message, type = 'info') {
+            debug(`Alert shown: ${type} - ${message}`, null, 'warning');
+            
             const container = document.getElementById('alert-container');
             const alert = document.createElement('div');
             alert.className = `alert alert-${type}`;
@@ -774,42 +1204,308 @@
         // ECWID INITIALIZATION
         // ========================================
         function initializeEcwid() {
-            log('Initializing Ecwid...');
+            debug('🚀 Starting Ecwid initialization...', { 
+                storeId: CONFIG.storeId,
+                configComplete: {
+                    hasPublicToken: !!CONFIG.publicToken && !CONFIG.publicToken.includes('YOUR_'),
+                    hasSecretToken: !!CONFIG.secretToken && !CONFIG.secretToken.includes('YOUR_'),
+                    hasEndpoints: !!CONFIG.endpoints,
+                    debugEnabled: CONFIG.debug,
+                    consoleEnabled: CONFIG.showDebugConsole
+                }
+            }, 'init', 'ECWID_INIT');
             
-            // Dynamically insert Ecwid script
+            // Show debug console if enabled
+            if (CONFIG.showDebugConsole) {
+                document.getElementById('debug-console').style.display = 'block';
+                debug('🐛 Debug console enabled and visible', null, 'config', 'DEBUG_CONSOLE');
+            }
+            
+            // Validate configuration before proceeding
+            if (!validateConfiguration()) {
+                showAlert('❌ Configuration error. Please check your API tokens and store ID.', 'error');
+                return;
+            }
+            
+            // Try to detect if we're running in an iframe (Lightspeed e-series embedding)
+            const isIframe = window !== window.parent;
+            if (isIframe) {
+                debug('🔍 Detected iframe environment', { 
+                    parentUrl: document.referrer,
+                    isLightspeed: document.referrer.includes('lightspeedretail.com')
+                }, 'config', 'IFRAME_DETECTION');
+                
+                setupIframeCommunication();
+            }
+            
+            // Dynamically insert Ecwid script with retry logic
             const scriptContainer = document.getElementById('ecwid-script-container');
             const script = document.createElement('script');
-            script.src = `https://app.ecwid.com/script.js?${CONFIG.storeId}`;
+            const scriptUrl = `https://app.ecwid.com/script.js?${CONFIG.storeId}&data_platform=code&data_date=${Date.now()}`;
+            script.src = scriptUrl;
             script.async = true;
+            script.id = 'ecwid-store-script';
+            
+            debug(`🌐 Loading Ecwid script`, { 
+                url: scriptUrl,
+                async: true,
+                timestamp: new Date().toISOString()
+            }, 'api', 'SCRIPT_LOAD');
+            
             scriptContainer.appendChild(script);
             
-            // Wait for Ecwid to load
+            // Enhanced error handling and retry logic
+            let retryCount = 0;
+            const maxRetries = 3;
+            const retryDelay = 2000;
+            
             script.onload = function() {
-                log('Ecwid script loaded');
+                debug('✅ Ecwid script loaded successfully', { 
+                    retryAttempts: retryCount,
+                    loadTime: Date.now() - debugSession.startTime
+                }, 'success', 'SCRIPT_LOAD');
                 
-                // Initialize when API is ready
-                if (window.Ecwid && window.Ecwid.OnAPILoaded) {
-                    window.Ecwid.OnAPILoaded.add(function() {
-                        log('Ecwid API loaded successfully');
-                        onEcwidReady();
-                    });
-                } else {
-                    log('Ecwid OnAPILoaded not available, retrying...');
-                    setTimeout(initializeEcwid, 1000);
-                }
+                // Initialize when API is ready with timeout and fallback
+                initializeEcwidAPI();
             };
             
             script.onerror = function() {
-                log('Failed to load Ecwid script');
-                showAlert('Failed to initialize checkout. Please refresh the page.', 'error');
+                retryCount++;
+                debug(`❌ Failed to load Ecwid script (${retryCount}/${maxRetries})`, {
+                    error: 'Script load failure',
+                    scriptUrl: scriptUrl,
+                    parentOrigin: document.referrer
+                }, 'error', 'SCRIPT_LOAD');
+                
+                if (retryCount < maxRetries) {
+                    debug(`🔄 Retrying script load in ${retryDelay/1000}s...`, null, 'warning', 'SCRIPT_RETRY');
+                    setTimeout(() => {
+                        script.src = scriptUrl + '&retry=' + retryCount;
+                    }, retryDelay);
+                } else {
+                    debug('💥 Max retries exceeded for script loading', null, 'error', 'SCRIPT_ERROR');
+                    showAlert('❌ Failed to initialize Ecwid after multiple attempts. Please check your connection and store ID.', 'error');
+                    
+                    // Try to load from backup CDN or show manual setup
+                    attemptFallbackInitialization();
+                }
             };
+        }
+        
+        function validateConfiguration() {
+            debug('⚙️ Validating configuration...', null, 'validation', 'CONFIG_CHECK');
+            
+            const issues = [];
+            
+            if (!CONFIG.storeId || CONFIG.storeId.includes('YOUR_STORE_ID_HERE')) {
+                issues.push('Store ID not configured');
+            }
+            
+            if (!CONFIG.publicToken || CONFIG.publicToken.includes('YOUR_PUBLIC_TOKEN_HERE')) {
+                issues.push('Public token not configured');
+            }
+            
+            if (!CONFIG.secretToken || CONFIG.secretToken.includes('YOUR_SECRET_TOKEN_HERE')) {
+                issues.push('Secret token not configured (required for testing)');
+            }
+            
+            if (issues.length > 0) {
+                debug('⚠️ Configuration validation failed', {
+                    issues: issues,
+                    recommendations: [
+                        'Get your store ID from Ecwid admin URL',
+                        'Generate public token: Admin → Settings → API → Public Token',
+                        'Generate secret token: Admin → Settings → API → Secret Token',
+                        'Update CONFIG object at top of script'
+                    ]
+                }, 'validation', 'CONFIG_ERROR');
+                return false;
+            }
+            
+            debug('✅ Configuration validation passed', {
+                storeId: CONFIG.storeId,
+                hasPublicToken: true,
+                hasSecretToken: true,
+                endpointCount: Object.keys(CONFIG.endpoints).length
+            }, 'validation', 'CONFIG_OK');
+            
+            return true;
+        }
+        
+        function initializeEcwidAPI() {
+            debug('🔧 Initializing Ecwid API...', null, 'init', 'API_INIT');
+            
+            if (window.Ecwid && window.Ecwid.OnAPILoaded) {
+                debug('📡 Ecwid.OnAPILoaded detected, setting up API...', null, 'api', 'API_SETUP');
+                
+                window.Ecwid.OnAPILoaded.add(function() {
+                    debug('🎉 Ecwid API loaded and ready!', {
+                        storeId: window.Ecwid.getOwnerId ? window.Ecwid.getOwnerId() : 'unknown',
+                        apiVersion: window.Ecwid.version || 'unknown',
+                        availableMethods: {
+                            hasCart: !!window.Ecwid.Cart,
+                            hasCustomer: !!window.Ecwid.Customer,
+                            hasProduct: !!window.Ecwid.Product,
+                            hasOnCartChanged: !!window.Ecwid.OnCartChanged,
+                            hasOnOrderCreated: !!window.Ecwid.OnOrderCreated
+                        }
+                    }, 'success', 'API_READY');
+                    
+                    onEcwidReady();
+                });
+            } else {
+                debug('⚠️ Ecwid.OnAPILoaded not available, retrying in 1 second...', {
+                    hasEcwid: !!window.Ecwid,
+                    ecwidKeys: window.Ecwid ? Object.keys(window.Ecwid) : []
+                }, 'warning', 'API_RETRY');
+                
+                setTimeout(() => {
+                    if (window.Ecwid && !window.Ecwid.OnAPILoaded) {
+                        debug('🔄 Direct initialization attempt...', null, 'init', 'API_DIRECT_INIT');
+                        onEcwidReady();
+                    } else {
+                        initializeEcwid(); // Retry full initialization
+                    }
+                }, 1000);
+            }
+        }
+        
+        function setupIframeCommunication() {
+            debug('📡 Setting up iframe communication for Lightspeed integration', null, 'config', 'IFRAME_COMM');
+            
+            // Listen for messages from parent frame
+            window.addEventListener('message', function(event) {
+                debug('📨 Received postMessage from parent', {
+                    origin: event.origin,
+                    data: event.data,
+                    type: typeof event.data
+                }, 'api', 'POST_MESSAGE');
+                
+                if (CONFIG.iframeEmbedding.debugPostMessages) {
+                    console.group('PostMessage Event');
+                    console.log('Origin:', event.origin);
+                    console.log('Data:', event.data);
+                    console.log('Source:', event.source);
+                    console.groupEnd();
+                }
+                
+                // Handle specific commands from Lightspeed
+                if (event.data && typeof event.data === 'object') {
+                    handlePostMessageCommand(event.data, event.origin);
+                }
+            });
+            
+            // Send ready signal to parent
+            if (window.parent && window.parent !== window) {
+                debug('📤 Sending ready signal to parent frame', null, 'api', 'POST_MESSAGE');
+                window.parent.postMessage({
+                    type: 'ECWID_CHECKOUT_READY',
+                    storeId: CONFIG.storeId,
+                    timestamp: Date.now()
+                }, '*');
+            }
+        }
+        
+        function handlePostMessageCommand(command, origin) {
+            debug(`🎯 Handling postMessage command: ${command.type || 'unknown'}`, {
+                command: command,
+                origin: origin
+            }, 'api', 'POST_COMMAND');
+            
+            switch (command.type) {
+                case 'LOAD_CART':
+                    loadCartFromExternalSource(command.cartData);
+                    break;
+                case 'CUSTOMER_DATA':
+                    loadCustomerFromExternalSource(command.customerData);
+                    break;
+                case 'CHECKOUT_CONFIG':
+                    updateCheckoutConfig(command.config);
+                    break;
+                default:
+                    debug(`⚠️ Unknown postMessage command: ${command.type}`, command, 'warning', 'POST_COMMAND');
+            }
+        }
+        
+        function attemptFallbackInitialization() {
+            debug('🆘 Attempting fallback initialization...', null, 'init', 'FALLBACK');
+            
+            // Show manual setup instructions
+            const container = document.getElementById('alert-container');
+            container.innerHTML = `
+                <div class="alert alert-error">
+                    <h3>⚠️ Ecwid Connection Issue</h3>
+                    <p><strong>Store ID:</strong> ${CONFIG.storeId}</p>
+                    <p><strong>Status:</strong> Unable to load Ecwid JavaScript API</p>
+                    <p><strong>Possible causes:</strong></p>
+                    <ul>
+                        <li>Incorrect store ID</li>
+                        <li>Network connectivity issues</li>
+                        <li>Ecwid service temporarily unavailable</li>
+                        <li>ISP blocking script loading</li>
+                    </ul>
+                    <p><strong>Manual check:</strong> Open <a href="https://app.ecwid.com/cpanel/${CONFIG.storeId}/" target="_blank">https://app.ecwid.com/cpanel/${CONFIG.storeId}/</a> to verify store is accessible.</p>
+                    
+                    <div style="margin-top: 20px;">
+                        <button onclick="attemptReconnection()" class="btn btn-primary">Retry Connection</button>
+                        <button onclick="showManualSetup()" class="btn btn-secondary">Show Manual Setup</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function attemptReconnection() {
+            debug('🔄 User requested reconnection...', null, 'init', 'RECONNECT');
+            location.reload();
+        }
+        
+        function showManualSetup() {
+            debug('📋 Showing manual setup instructions...', null, 'init', 'MANUAL_SETUP');
+            
+            const container = document.getElementById('alert-container');
+            container.innerHTML = `
+                <div class="alert alert-info">
+                    <h3>🔧 Manual Setup Instructions</h3>
+                    <div style="text-align: left;">
+                        <h4>1. Verify Store ID</h4>
+                        <p>Your current store ID: <code>${CONFIG.storeId}</code></p>
+                        <p>Find your store ID in:</p>
+                        <ul>
+                            <li>Ecwid admin URL: <code>https://app.ecwid.com/cpanel/STOREID/</code></li>
+                            <li>Your store URL: <code>https://STOREID.ecwid.com</code></li>
+                        </ul>
+                        
+                        <h4>2. Generate API Tokens</h4>
+                        <p>Go to: Ecwid Admin → Settings → API</p>
+                        <ul>
+                            <li>Generate <strong>Public Token</strong> (read-only, safe for frontend)</li>
+                            <li>Generate <strong>Secret Token</strong> (full access, backend only in production)</li>
+                        </ul>
+                        
+                        <h4>3. Update Configuration</h4>
+                        <p>Replace placeholders in CONFIG object:</p>
+                        <ul>
+                            <li><code>storeId: 'YOUR_STORE_ID_HERE'</code> → <code>storeId: '${CONFIG.storeId}'</code></li>
+                            <li><code>publicToken: 'YOUR_PUBLIC_TOKEN_HERE'</code> → Your actual public token</li>
+                            <li><code>secretToken: 'YOUR_SECRET_TOKEN_HERE'</code> → Your actual secret token</li>
+                        </ul>
+                        
+                        <div style="margin-top: 20px;">
+                            <button onclick="location.reload()" class="btn btn-primary">Reload After Setup</button>
+                        </div>
+                    </div>
+                </div>
+            `;
         }
         
         // ========================================
         // ECWID API READY HANDLER
         // ========================================
         function onEcwidReady() {
-            log('Ecwid API ready, store ID:', window.Ecwid.getOwnerId());
+            debug('Ecwid API ready, initializing checkout...', {
+                hasCart: !!window.Ecwid.Cart,
+                hasCustomer: !!window.Ecwid.Customer
+            });
             
             // Load existing cart
             loadCart();
@@ -820,39 +1516,229 @@
             // Listen for cart changes
             if (window.Ecwid.OnCartChanged) {
                 window.Ecwid.OnCartChanged.add(function(cart) {
-                    log('Cart changed', cart);
+                    debug('Cart changed event triggered', cart, 'state');
                     updateCartDisplay(cart);
                 });
+            }
+            
+            // Set minimum date for pickup
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const pickupDateInput = document.getElementById('pickup-date');
+            if (pickupDateInput) {
+                pickupDateInput.min = tomorrow.toISOString().split('T')[0];
             }
         }
         
         // ========================================
-        // CART MANAGEMENT
+        // ENHANCED CART MANAGEMENT
         // ========================================
         function loadCart() {
-            log('Loading cart...');
+            const startTime = Date.now();
+            debug('🛒 Loading cart data...', {
+                autoLoadEnabled: CONFIG.cart.autoLoadOnInit,
+                presetExisting: CONFIG.cart.preserveExisting,
+                updateFrequency: CONFIG.cart.updateFrequency
+            }, 'cart', 'CART_LOAD');
+            
             showLoading();
             
             if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.get) {
+                debug('📡 Calling Ecwid.Cart.get()...', null, 'api', 'CART_API');
+                
                 window.Ecwid.Cart.get(function(cart) {
-                    log('Cart loaded', cart);
+                    const loadDuration = Date.now() - startTime;
+                    
+                    debug('✅ Cart loaded successfully', {
+                        itemCount: cart?.items?.length || 0,
+                        cartId: cart?.cartId || 'null',
+                        subtotal: cart?.subtotal || 0,
+                        total: cart?.total || 0,
+                        tax: cart?.tax || 0,
+                        hasShipping: !!cart?.shippingPerson,
+                        hasBilling: !!cart?.billingPerson,
+                        loadDuration: `${loadDuration}ms`,
+                        cartStructure: {
+                            hasItems: !!cart?.items,
+                            hasSubtotal: 'subtotal' in cart,
+                            hasTotal: 'total' in cart,
+                            hasTax: 'tax' in cart,
+                            hasCustomerEmail: 'customerEmail' in cart
+                        }
+                    }, 'cart', 'CART_SUCCESS');
+                    
+                    // Track performance
+                    trackApiCall('Ecwid.Cart.get', 'GET', startTime);
+                    
                     checkoutState.cart = cart;
+                    debugSession.cartLoads++;
+                    
+                    console.group('%c🛒 Cart Data Structure', 'color: #9966cc; font-weight: bold;');
+                    console.log('Full cart object:', cart);
+                    console.log('Items details:', cart?.items?.map(item => ({
+                        id: item.id,
+                        productId: item.product.id,
+                        productName: item.product.name,
+                        quantity: item.quantity,
+                        price: item.product.price,
+                        options: item.options,
+                        subtotal: item.product.price * item.quantity
+                    })));
+                    console.groupEnd();
+                    
                     updateCartDisplay(cart);
                     hideLoading();
                     
                     // Check if cart is empty
                     if (!cart || !cart.items || cart.items.length === 0) {
-                        showAlert('Your cart is empty. Add items before checking out.', 'info');
+                        debug('⚠️ Cart is empty', {
+                            cartExists: !!cart,
+                            cartStructure: cart ? Object.keys(cart) : 'null',
+                            expectedStructure: ['items', 'subtotal', 'total', 'tax', 'cartId', 'customerEmail']
+                        }, 'cart', 'CART_EMPTY');
+                        
+                        if (CONFIG.cart.showEmptyState) {
+                            showAlert('Your cart is empty. Add items before checking out.', 'info');
+                        }
+                        
+                        // For Lightspeed integration, this empty state might be normal
+                        // Send empty cart status to parent frame
+                        if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                            sendCartStatusToParent('empty');
+                        }
+                    } else {
+                        // Cart has items, send cart status to parent frame  
+                        if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                            sendCartStatusToParent('loaded', cart);
+                        }
                     }
+                    
                 });
             } else {
-                log('Ecwid Cart API not available');
+                debug('❌ Ecwid Cart API not available', {
+                    hasEcwid: !!window.Ecwid,
+                    hasCart: !!window.Ecwid?.Cart,
+                    hasGet: !!window.Ecwid?.Cart?.get,
+                    availableMethods: window.Ecwid?.Cart ? Object.keys(window.Ecwid.Cart) : []
+                }, 'cart', 'CART_API_ERROR');
+                
                 hideLoading();
-                showAlert('Unable to load cart. Please refresh the page.', 'error');
+                showAlert('Unable to load cart. The Ecwid Cart API is not available.', 'error');
+                
+                // Attempt to load cart from URL parameters or localStorage as fallback
+                attemptCartRecovery();
             }
         }
         
+        function sendCartStatusToParent(status, cartData = null) {
+            const message = {
+                type: 'CART_STATUS',
+                status: status,
+                storeId: CONFIG.storeId,
+                timestamp: Date.now()
+            };
+            
+            if (cartData && status === 'loaded') {
+                message.cartSummary = {
+                    itemCount: cartData.items?.length || 0,
+                    subtotal: cartData.subtotal || 0,
+                    total: cartData.total || 0
+                };
+            }
+            
+            debug('📤 Sending cart status to parent frame', message, 'api', 'PARENT_MESSAGE');
+            
+            try {
+                window.parent.postMessage(message, '*');
+            } catch (error) {
+                debug('❌ Failed to send cart status to parent', error, 'error', 'PARENT_MESSAGE_ERROR');
+            }
+        }
+        
+        function attemptCartRecovery() {
+            debug('🆘 Attempting cart recovery methods...', null, 'cart', 'CART_RECOVERY');
+            
+            // Check URL parameters for cart data
+            const urlParams = new URLSearchParams(window.location.search);
+            const cartParam = urlParams.get('cart') || urlParams.get('cartData');
+            
+            if (cartParam) {
+                try {
+                    const cartData = JSON.parse(decodeURIComponent(cartParam));
+                    debug('📊 Found cart data in URL parameters', cartData, 'cart', 'URL_CART');
+                    checkoutState.cart = cartData;
+                    updateCartDisplay(cartData);
+                    showAlert('Cart loaded from URL parameters.', 'info');
+                    return;
+                } catch (error) {
+                    debug('❌ Invalid cart data in URL parameters', error, 'error', 'URL_CART_ERROR');
+                }
+            }
+            
+            // Check localStorage for previous cart
+            const localCartData = localStorage.getItem('ecwid_cart_backup');
+            if (localCartData) {
+                try {
+                    const cartData = JSON.parse(localCartData);
+                    debug('💾 Found cart backup in localStorage', cartData, 'cart', 'LOCAL_CART');
+                    checkoutState.cart = cartData;
+                    updateCartDisplay(cartData);
+                    showAlert('Cart restored from local backup.', 'info');
+                    return;
+                } catch (error) {
+                    debug('❌ Invalid cart backup in localStorage', error, 'error', 'LOCAL_CART_ERROR');
+                }
+            }
+            
+            // Show setup instructions
+            debug('📋 Showing cart recovery instructions', null, 'cart', 'CART_RECOVERY_FAILED');
+            showCartRecoveryInstructions();
+        }
+        
+        function showCartRecoveryInstructions() {
+            const container = document.getElementById('alert-container');
+            container.innerHTML = `
+                <div class="alert alert-warning">
+                    <h3>🛒 Cart Recovery Needed</h3>
+                    <p>The checkout can't load your cart automatically. Here are some options:</p>
+                    
+                    <h4>Option 1: Refresh your cart page</h4>
+                    <p>Go back to the store and add items to your cart, then return to checkout.</p>
+                    
+                    <h4>Option 2: Manual cart URL</h4>
+                    <p>Your store URL: <a href="https://${CONFIG.storeId}.ecwid.com" target="_blank">https://${CONFIG.storeId}.ecwid.com</a></p>
+                    
+                    <ul>
+                        <li>Add items to cart on the store</li>
+                        <li>Copy the cart URL before coming to checkout</li>
+                        <li>Use that URL parameter: ?cart={cartData}</li>
+                    </ul>
+                    
+                    <div style="margin-top: 20px;">
+                        <button onclick="checkForCartAgain()" class="btn btn-primary">Retry Cart Load</button>
+                        <button onclick="proceedWithEmptyCart()" class="-btn btn-secondary">Continue with Empty Cart</button>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function checkForCartAgain() {
+            debug('🔄 User requested cart retry', null, 'cart', 'CART_RETRY');
+            location.reload();
+        }
+        
+        function proceedWithEmptyCart() {
+            debug('⚠️ User proceeding with empty cart', null, 'cart', 'EMPTY_CART_PROCEED');
+            
+            checkoutState.cart = { items: [], subtotal: 0, total: 0, tax: 0 };
+            updateCartDisplay(checkoutState.cart);
+            
+            showAlert('Continuing with empty cart. You can add items later.', 'info');
+        }
+        
         function updateCartDisplay(cart) {
+            debug('Updating cart display', { itemCount: cart?.items?.length || 0 });
+            
             if (!cart) return;
             
             const itemsContainer = document.getElementById('cart-items-container');
@@ -865,7 +1751,13 @@
             
             // Add each item
             if (cart.items && cart.items.length > 0) {
-                cart.items.forEach(item => {
+                cart.items.forEach((item, index) => {
+                    debug(`Adding cart item ${index}`, {
+                        name: item.product.name,
+                        quantity: item.quantity,
+                        price: item.product.price
+                    });
+                    
                     const cartItem = document.createElement('div');
                     cartItem.className = 'cart-item';
                     
@@ -890,42 +1782,153 @@
             }
             
             // Update totals
-            subtotalEl.textContent = formatPrice(cart.subtotal || 0);
+            const subtotal = cart.subtotal || 0;
+            let total = subtotal;
+            
+            subtotalEl.textContent = formatPrice(subtotal);
+            
+            // Add delivery fee if room delivery is selected
+            if (checkoutState.delivery.method === 'room') {
+                const deliveryFee = checkoutState.delivery.deliveryFee;
+                document.getElementById('delivery-fee-line').classList.remove('hidden');
+                document.getElementById('cart-delivery-fee').textContent = formatPrice(deliveryFee);
+                total += deliveryFee;
+                debug('Added delivery fee to total', { deliveryFee, newTotal: total });
+            } else {
+                document.getElementById('delivery-fee-line').classList.add('hidden');
+            }
             
             if (cart.tax) {
                 taxEl.textContent = formatPrice(cart.tax);
+                total += cart.tax;
             }
             
-            totalEl.textContent = formatPrice(cart.total || cart.subtotal || 0);
+            totalEl.textContent = formatPrice(total);
+            
+            debug('Cart display updated', { subtotal, total });
         }
         
         // ========================================
         // CUSTOMER SESSION
         // ========================================
         function checkCustomerSession() {
+            debug('Checking for customer session...');
+            
             if (window.Ecwid && window.Ecwid.Customer && window.Ecwid.Customer.get) {
                 window.Ecwid.Customer.get(function(customer) {
                     if (customer && customer.email) {
-                        log('Customer session found', customer);
+                        debug('Customer session found', customer, 'success');
                         checkoutState.customer.email = customer.email;
                         document.getElementById('email').value = customer.email;
-                        
-                        // Pre-fill name if available
-                        if (customer.name) {
-                            const names = customer.name.split(' ');
-                            checkoutState.customer.firstName = names[0] || '';
-                            checkoutState.customer.lastName = names.slice(1).join(' ') || '';
-                        }
+                    } else {
+                        debug('No customer session found');
                     }
                 });
             }
         }
         
         // ========================================
+        // ROOM/TEACHER AUTOCOMPLETE
+        // ========================================
+        function handleRoomTeacherInput(value) {
+            debug(`Room/Teacher input changed: "${value}"`);
+            
+            const resultsContainer = document.getElementById('room-teacher-results');
+            
+            if (!value || value.length < 1) {
+                resultsContainer.classList.remove('show');
+                return;
+            }
+            
+            const searchLower = value.toLowerCase();
+            const matches = ROOM_TEACHER_DATA.filter(item => 
+                item.room.toLowerCase().includes(searchLower) ||
+                item.teacher.toLowerCase().includes(searchLower) ||
+                item.subject.toLowerCase().includes(searchLower)
+            );
+            
+            debug(`Found ${matches.length} matches for "${value}"`, matches);
+            
+            if (matches.length > 0) {
+                resultsContainer.innerHTML = matches.map(item => `
+                    <div class="autocomplete-item" onclick="selectRoomTeacher('${item.room} - ${item.teacher}')">
+                        <strong>Room ${item.room}</strong> - ${item.teacher} (${item.subject})
+                    </div>
+                `).join('');
+                resultsContainer.classList.add('show');
+            } else {
+                resultsContainer.innerHTML = `
+                    <div class="autocomplete-item" style="color: #999;">
+                        No matches found. You can type your own room/teacher.
+                    </div>
+                `;
+                resultsContainer.classList.add('show');
+            }
+        }
+        
+        function selectRoomTeacher(value) {
+            debug(`Room/Teacher selected: "${value}"`, null, 'success');
+            
+            document.getElementById('room-teacher-input').value = value;
+            document.getElementById('room-teacher-results').classList.remove('show');
+            checkoutState.delivery.roomTeacher = value;
+            
+            debug('Updated delivery state', checkoutState.delivery, 'state');
+        }
+        
+        // ========================================
+        // DELIVERY METHOD SELECTION
+        // ========================================
+        function selectDeliveryMethod(method) {
+            debug(`Delivery method selected: ${method}`, null, 'state');
+            
+            checkoutState.delivery.method = method;
+            
+            // Hide all options first
+            document.getElementById('room-delivery-options').classList.add('hidden');
+            document.getElementById('pickup-options').classList.add('hidden');
+            
+            // Show relevant options
+            if (method === 'room') {
+                document.getElementById('room-delivery-options').classList.remove('hidden');
+                
+                // Set delivery fee (random between min and max for testing)
+                checkoutState.delivery.deliveryFee = CONFIG.deliveryFeeMin + 
+                    (Math.random() * (CONFIG.deliveryFeeMax - CONFIG.deliveryFeeMin));
+                
+                debug(`Set delivery fee: ${formatPrice(checkoutState.delivery.deliveryFee)}`);
+                
+                // Update cart display to show fee
+                updateCartDisplay(checkoutState.cart);
+            } else if (method === 'pickup') {
+                document.getElementById('pickup-options').classList.remove('hidden');
+                checkoutState.delivery.deliveryFee = 0;
+                
+                // Update cart display to remove fee
+                updateCartDisplay(checkoutState.cart);
+            }
+            
+            // Update radio button styling
+            document.querySelectorAll('.radio-option').forEach(option => {
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio && radio.name === 'delivery') {
+                    if (radio.value === method) {
+                        option.classList.add('selected');
+                    } else {
+                        option.classList.remove('selected');
+                    }
+                }
+            });
+        }
+        
+        // ========================================
         // STEP NAVIGATION
         // ========================================
         function goToStep(stepNumber) {
-            log(`Going to step ${stepNumber}`);
+            debug(`Navigating to step ${stepNumber}`, { 
+                fromStep: checkoutState.currentStep,
+                toStep: stepNumber 
+            }, 'state');
             
             // Hide all steps
             document.querySelectorAll('.checkout-step').forEach(step => {
@@ -952,18 +1955,25 @@
             
             // Scroll to top
             window.scrollTo(0, 0);
+            
+            debug(`Step ${stepNumber} activated`, null, 'success');
         }
         
         // ========================================
         // STEP 1: EMAIL
         // ========================================
         function proceedToStep2() {
+            debug('Processing Step 1: Email...');
+            
             const email = document.getElementById('email').value;
             const newsletter = document.getElementById('newsletter').checked;
+            
+            debug('Email form data', { email, newsletter });
             
             // Validate email
             const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
             if (!emailRegex.test(email)) {
+                debug('Email validation failed', { email }, 'error');
                 showAlert('Please enter a valid email address', 'error');
                 return;
             }
@@ -972,220 +1982,674 @@
             checkoutState.customer.email = email;
             checkoutState.customer.newsletter = newsletter;
             
+            debug('Customer state updated', checkoutState.customer, 'state');
+            
             // Set email in Ecwid
             if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.setCustomerEmail) {
+                debug('Setting customer email in Ecwid...', { email }, 'api');
+                
                 window.Ecwid.Cart.setCustomerEmail(email, 
                     function() {
-                        log('Email set successfully');
+                        debug('Email set successfully in Ecwid', null, 'success');
                         goToStep(2);
                     },
                     function(error) {
-                        log('Failed to set email', error);
+                        debug('Failed to set email in Ecwid', error, 'error');
                         goToStep(2); // Continue anyway
                     }
                 );
             } else {
+                debug('Ecwid.Cart.setCustomerEmail not available, continuing anyway', null, 'warning');
                 goToStep(2);
             }
         }
         
         // ========================================
-        // STEP 2: SHIPPING
+        // STEP 2: DELIVERY
         // ========================================
         function proceedToStep3() {
-            // Collect shipping information
-            const firstName = document.getElementById('firstName').value;
-            const lastName = document.getElementById('lastName').value;
-            const address = document.getElementById('address').value;
-            const apartment = document.getElementById('apartment').value;
-            const city = document.getElementById('city').value;
-            const state = document.getElementById('state').value;
-            const zip = document.getElementById('zip').value;
-            const phone = document.getElementById('phone').value;
+            debug('Processing Step 2: Delivery...');
             
-            // Validate required fields
-            if (!firstName || !lastName || !address || !city || !state || !zip) {
-                showAlert('Please fill in all required fields', 'error');
+            const deliveryMethod = checkoutState.delivery.method;
+            
+            if (!deliveryMethod) {
+                debug('No delivery method selected', null, 'error');
+                showAlert('Please select a delivery method', 'error');
                 return;
             }
             
-            // Save to state
-            checkoutState.customer.firstName = firstName;
-            checkoutState.customer.lastName = lastName;
-            checkoutState.customer.phone = phone;
+            debug('Validating delivery method', { method: deliveryMethod });
             
-            checkoutState.shipping.address = {
-                name: `${firstName} ${lastName}`,
-                street: apartment ? `${address}, ${apartment}` : address,
-                city: city,
-                stateOrProvinceCode: state,
-                postalCode: zip,
-                countryCode: 'US',
-                phone: phone
-            };
-            
-            // Get selected delivery method
-            const deliveryMethod = document.querySelector('input[name="delivery"]:checked').value;
-            checkoutState.shipping.method = deliveryMethod;
-            
-            // If backend is configured, calculate shipping
-            if (CONFIG.backendApiUrl) {
-                calculateShipping();
-            } else {
-                // Proceed without calculation
-                goToStep(3);
-                updateReviewStep();
+            if (deliveryMethod === 'room') {
+                // Validate room delivery
+                const roomTeacher = document.getElementById('room-teacher-input').value;
+                const hasPermission = document.getElementById('teacher-permission').checked;
+                const roomPayment = document.querySelector('input[name="room-payment"]:checked');
+                
+                if (!roomTeacher) {
+                    debug('Room/Teacher not specified', null, 'error');
+                    showAlert('Please enter room number or teacher name', 'error');
+                    return;
+                }
+                
+                if (!hasPermission) {
+                    debug('Teacher permission not granted', null, 'error');
+                    showAlert('You must have permission from your teacher to order at this time', 'error');
+                    return;
+                }
+                
+                if (!roomPayment) {
+                    debug('Room payment method not selected', null, 'error');
+                    showAlert('Please select a payment method for room delivery', 'error');
+                    return;
+                }
+                
+                checkoutState.delivery.roomTeacher = roomTeacher;
+                checkoutState.delivery.hasTeacherPermission = hasPermission;
+                checkoutState.delivery.roomPaymentMethod = roomPayment.value;
+                
+                debug('Room delivery validation passed', {
+                    roomTeacher: roomTeacher,
+                    hasPermission: hasPermission,
+                    paymentMethod: roomPayment.value,
+                    deliveryFee: checkoutState.delivery.deliveryFee
+                }, 'validation');
+                
+            } else if (deliveryMethod === 'pickup') {
+                // Validate pickup delivery
+                const pickupDate = document.getElementById('pickup-date').value;
+                const pickupTime = document.getElementById('pickup-time').value;
+                const pickupName = document.getElementById('pickup-name').value;
+                
+                if (!pickupDate) {
+                    debug('Pickup date not selected', null, 'error');
+                    showAlert('Please select a pickup date', 'error');
+                    return;
+                }
+                
+                if (!pickupTime) {
+                    debug('Pickup time not selected', null, 'error');
+                    showAlert('Please select a pickup time', 'error');
+                    return;
+                }
+                
+                if (!pickupName) {
+                    debug('Pickup name not provided', null, 'error');
+                    showAlert('Please enter your name for pickup', 'error');
+                    return;
+                }
+                
+                checkoutState.delivery.pickupDate = pickupDate;
+                checkoutState.delivery.pickupTime = pickupTime;
+                checkoutState.delivery.pickupName = pickupName;
+                
+                debug('Pickup delivery validation passed', {
+                    pickupDate: pickupDate,
+                    pickupTime: pickupTime,
+                    pickupName: pickupName
+                }, 'validation');
             }
+            
+            debug('Delivery step completed', checkoutState.delivery, 'step');
+            goToStep(3);
+            updateReviewStep();
         }
         
         // ========================================
         // STEP 3: REVIEW
         // ========================================
         function updateReviewStep() {
+            debug('📋 Updating review step', {
+                deliveryMethod: checkoutState.delivery.method,
+                customerEmail: checkoutState.customer.email,
+                cartItems: checkoutState.cart?.items?.length || 0
+            }, 'step', 'REVIEW_UPDATE');
+            
             const reviewContent = document.getElementById('review-content');
             
-            let html = `
+            let reviewHTML = `
                 <div style="background: #f8f8f8; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
-                    <h3>Contact Information</h3>
-                    <p>${checkoutState.customer.email}</p>
+                    <h3>📧 Contact Information</h3>
+                    <p><strong>Email:</strong> ${checkoutState.customer.email}</p>
+                    ${checkoutState.customer.newsletter ? '<p><em>✅ Subscribed to newsletter</em></p>' : ''}
                 </div>
                 
                 <div style="background: #f8f8f8; padding: 20px; border-radius: 4px; margin-bottom: 20px;">
-                    <h3>Shipping Address</h3>
-                    <p>
-                        ${checkoutState.customer.firstName} ${checkoutState.customer.lastName}<br>
-                        ${checkoutState.shipping.address.street}<br>
-                        ${checkoutState.shipping.address.city}, ${checkoutState.shipping.address.stateOrProvinceCode} ${checkoutState.shipping.address.postalCode}
-                        ${checkoutState.customer.phone ? `<br>Phone: ${checkoutState.customer.phone}` : ''}
-                    </p>
+                    <h3>🚚 Delivery Details</h3>
+            `;
+            
+            if (checkoutState.delivery.method === 'room') {
+                reviewHTML += `
+                    <p><strong>Method:</strong> Deliver to Room</p>
+                    <p><strong>Room/Teacher:</strong> ${checkoutState.delivery.roomTeacher}</p>
+                    <p><strong>Teacher Permission:</strong> ✅ ${checkoutState.delivery.hasTeacherPermission ? 'Granted' : 'Not granted'}</p>
+                    <p><strong>Payment:</strong> ${checkoutState.delivery.roomPaymentMethod === 'online' ? 'Pay Online Now' : 'Pay at Delivery'}</p>
+                    <p><strong>Delivery Fee:</strong> ${formatPrice(checkoutState.delivery.deliveryFee)}</p>
+                `;
+            } else {
+                reviewHTML += `
+                    <p><strong>Method:</strong> Store Pickup</p>
+                    <p><strong>Pickup Date:</strong> ${checkoutState.delivery.pickupDate}</p>
+                    <p><strong>Pickup Time:</strong> ${checkoutState.delivery.pickupTime}</p>
+                    <p><strong>Name:</strong> ${checkoutState.delivery.pickupName}</p>
+                    <p><strong>Location:</strong> School Store (Main Building, Room 101)</p>
+                `;
+            }
+            
+            reviewHTML += `
                 </div>
                 
                 <div style="background: #f8f8f8; padding: 20px; border-radius: 4px;">
-                    <h3>Delivery Method</h3>
-                    <p>${checkoutState.shipping.method === 'pickup' ? 'Store Pickup' : 'Standard Shipping'}</p>
+                    <h3>💳 Order Summary</h3>
+                    <div style="margin-bottom: 10px;">
+                        <strong>Subtotal:</strong> ${formatPrice(checkoutState.cart?.subtotal || 0)}
+                    </div>
+            `;
+            
+            if (checkoutState.delivery.method === 'room') {
+                reviewHTML += `
+                    <div style="margin-bottom: 10px; color: #856404;">
+                        <strong>Delivery Fee:</strong> ${formatPrice(checkoutState.delivery.deliveryFee)}
+                    </div>
+                `;
+            }
+            
+            const total = (checkoutState.cart?.subtotal || 0) + 
+                         (checkoutState.delivery.method === 'room' ? checkoutState.delivery.deliveryFee : 0);
+            
+            reviewHTML += `
+                    <div style="margin-bottom: 10px;">
+                        <strong>Tax:</strong> ${formatPrice(checkoutState.cart?.tax || 0)}
+                    </div>
+                    <div style="border-top: 1px solid #ddd; padding-top: 10px; font-size: 16px; font-weight: bold;">
+                        <strong>Total:</strong> ${formatPrice(total + (checkoutState.cart?.tax || 0))}
+                    </div>
                 </div>
             `;
             
-            reviewContent.innerHTML = html;
+            reviewContent.innerHTML = reviewHTML;
+            
+            debug('Review step updated with current state', null, 'step', 'REVIEW_COMPLETE');
         }
         
         function proceedToStep4() {
+            debug('🚀 Proceeding to Step 4: Payment...', checkoutState.payment, 'step', 'PAYMENT_STEP');
             goToStep(4);
+            setupPaymentOptions();
         }
         
         // ========================================
         // STEP 4: PAYMENT
         // ========================================
-        function placeOrder() {
-            log('Placing order...', checkoutState);
+        function setupPaymentOptions() {
+            debug('💳 Setting up payment options...', {
+                deliveryMethod: checkoutState.delivery.method,
+                roomPaymentMethod: checkoutState.delivery.roomPaymentMethod
+            }, 'payment', 'PAYMENT_SETUP');
             
-            showAlert('Order placement will be implemented with payment processing.', 'info');
+            const paymentContainer = document.getElementById('payment-options-container');
+            let paymentHTML = '';
             
-            // In a real implementation, you would:
-            // 1. Process payment
-            // 2. Call backend to create order via Ecwid REST API
-            // 3. Clear cart
-            // 4. Show confirmation
+            if (checkoutState.delivery.method === 'room') {
+                // Room delivery payment options
+                if (checkoutState.delivery.roomPaymentMethod === 'online') {
+                    paymentHTML = `
+                        <div class="radio-group">
+                            <label class="radio-option selected">
+                                <input type="radio" name="payment" value="card" checked onchange="selectPaymentMethod('card')">
+                                <div>
+                                    <div>💳 Credit Card</div>
+                                    <small style="color: #666;">Secure online payment - Processed immediately</small>
+                                </div>
+                            </label>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>🔒 Secure Payment:</strong> Your payment will be processed securely through our payment provider. 
+                            Your card details are encrypted and never stored on our servers.
+                        </div>
+                    `;
+                } else {
+                    paymentHTML = `
+                        <div class="alert alert-info">
+                            <strong>💰 Cash Payment:</strong> You've selected to pay when your order is delivered to your room.
+                            Your order will be marked as "Awaiting Payment" until cash is received.
+                        </div>
+                        
+                        <div style="background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 15px; margin: 20px 0;">
+                            <h4 style="color: #856404; margin: 0 0 10px 0;">📋 Delivery Instructions:</h4>
+                            <p style="margin: 0; color: #856404;">
+                                When our delivery person arrives at your room, please have the exact amount ready: 
+                                <strong>${formatPrice(getTotalOrderAmount())}</strong>
+                            </p>
+                        </div>
+                    `;
+                }
+            } else if (checkoutState.delivery.method === 'pickup') {
+                // Store pickup payment options
+                paymentHTML = `
+                    <div class="radio-group">
+                        <label class="radio-option selected">
+                            <input type="radio" name="payment" value="card" checked onchange="selectPaymentMethod('card')">
+                            <div>
+                                <div>💳 Credit Card (Online)</div>
+                                <small style="color: #666;">Complete payment before pickup</small>
+                            </div>
+                        </label>
+                        <label class="radio-option">
+                            <input type="radio" name="payment" value="cash" onchange="selectPaymentMethod('cash')">
+                            <div>
+                                <div>💰 Cash at Pickup</div>
+                                <small style="color: #666;">Pay when you arrive at the store</small>
+                            </div>
+                        </label>
+                    </div>
+                    
+                    ${checkoutState.delivery.roomPaymentMethod === 'online' ? 
+                        '<div class="alert alert-info">Payment must be completed online before pickup.</div>' : ''}
+                `;
+            }
+            
+            paymentContainer.innerHTML = paymentHTML;
+        }
+        
+        function selectPaymentMethod(method) {
+            debug('💳 Payment method selected', { method }, 'payment', 'PAYMENT_METHOD');
+            
+            checkoutState.payment.method = method;
+            
+            // Update radio button styling
+            document.querySelectorAll('.radio-option').forEach(option => {
+                const radio = option.querySelector('input[type="radio"]');
+                if (radio && radio.name === 'payment') {
+                    if (radio.value === method) {
+                        option.classList.add('selected');
+                    } else {
+                        option.classList.remove('selected');
+                    }
+                }
+            });
+            
+            debug('Payment method state updated', checkoutState.payment, 'payment');
+        }
+        
+        function getTotalOrderAmount() {
+            const subtotal = checkoutState.cart?.subtotal || 0;
+            const deliveryFee = checkoutState.delivery.method === 'room' ? checkoutState.delivery.deliveryFee : 0;
+            const tax = checkoutState.cart?.tax || 0;
+            
+            return subtotal + deliveryFee + tax;
         }
         
         // ========================================
-        // SHIPPING CALCULATION (Optional - requires backend)
+        // ORDER PLACEMENT
         // ========================================
-        async function calculateShipping() {
-            if (!CONFIG.backendApiUrl) {
-                log('No backend configured, skipping shipping calculation');
-                return;
-            }
+        function placeOrder() {
+            debug('🎯 Placing order...', {
+                deliveryMethod: checkoutState.delivery.method,
+                paymentMethod: checkoutState.payment.method,
+                totalAmount: getTotalOrderAmount(),
+                customerEmail: checkoutState.customer.email
+            }, 'payment', 'ORDER_PLACE');
             
             showLoading();
             
-            try {
-                const response = await fetch(`${CONFIG.backendApiUrl}/calculate-order`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        email: checkoutState.customer.email,
-                        items: prepareItemsForAPI(),
-                        shippingPerson: checkoutState.shipping.address
-                    })
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to calculate shipping');
-                }
-                
-                const data = await response.json();
-                log('Shipping calculated', data);
-                
-                checkoutState.calculatedTotals = data;
-                
-                // Update display
-                if (data.tax) {
-                    document.getElementById('cart-tax').textContent = formatPrice(data.tax);
-                }
-                if (data.shipping) {
-                    document.getElementById('cart-shipping').textContent = formatPrice(data.shipping);
-                }
-                if (data.total) {
-                    document.getElementById('cart-total').textContent = formatPrice(data.total);
-                }
-                
-            } catch (error) {
-                log('Failed to calculate shipping', error);
-                showAlert('Unable to calculate shipping. Continuing with estimated totals.', 'info');
-            } finally {
+            // Validate final state before placing order
+            if (!validateOrderPlacement()) {
                 hideLoading();
-            }
-        }
-        
-        function prepareItemsForAPI() {
-            if (!checkoutState.cart || !checkoutState.cart.items) {
-                return [];
-            }
-            
-            return checkoutState.cart.items.map(item => ({
-                productId: item.product.id,
-                quantity: item.quantity,
-                price: item.product.price,
-                name: item.product.name,
-                sku: item.product.sku
-            }));
-        }
-        
-        // ========================================
-        // EVENT LISTENERS
-        // ========================================
-        document.addEventListener('DOMContentLoaded', function() {
-            log('DOM loaded, initializing checkout...');
-            
-            // Check configuration
-            if (!CONFIG.storeId || CONFIG.storeId === 'YOUR_STORE_ID_HERE') {
-                showAlert('Please configure your Store ID in the CONFIG section at the top of the script.', 'error');
                 return;
             }
             
-            // Initialize Ecwid
+            // Simulate order placement (replace with real API call)
+            setTimeout(() => {
+                const orderId = 'TEST-' + Date.now().toString(36).toUpperCase();
+                checkoutState.orderId = orderId;
+                
+                debug('✅ Order placed successfully!', {
+                    orderId: orderId,
+                    orderAmount: getTotalOrderAmount(),
+                    deliveryMethod: checkoutState.delivery.method,
+                    paymentMethod: checkoutState.payment.method
+                }, 'success', 'ORDER_SUCCESS');
+                
+                hideLoading();
+                showOrderConfirmation(orderId);
+                
+                // Clear cart after successful order
+                if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.clear) {
+                    debug('🗑️ Clearing cart after order placement...', null, 'cart', 'CART_CLEAR');
+                    window.Ecwid.Cart.clear(function() {
+                        debug('✅ Cart cleared successfully', null, 'cart', 'CART_CLEAR_SUCCESS');
+                    });
+                }
+                
+                // Send order confirmation to parent frame if embedded
+                if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                    sendOrderConfirmationToParent(orderId);
+                }
+                
+            }, 2000); // Simulate processing time
+        }
+        
+        function validateOrderPlacement() {
+            const validationErrors = [];
+            
+            if (!checkoutState.customer.email) {
+                validationErrors.push('Customer email not set');
+            }
+            
+            if (!checkoutState.delivery.method) {
+                validationErrors.push('Delivery method not selected');
+            }
+            
+            if (!checkoutState.payment.method) {
+                validationErrors.push('Payment method not selected');
+            }
+            
+            if (!checkoutState.cart || !checkoutState.cart.items || checkoutState.cart.items.length === 0) {
+                validationErrors.push('Cart is empty');
+            }
+            
+            // Additional validation for room delivery
+            if (checkoutState.delivery.method === 'room') {
+                if (!checkoutState.delivery.roomTeacher) {
+                    validationErrors.push('Room/Teacher not specified');
+                }
+                if (!checkoutState.delivery.hasTeacherPermission) {
+                    validationErrors.push('Teacher permission not granted');
+                }
+                if (!checkoutState.delivery.roomPaymentMethod) {
+                    validationErrors.push('Room payment method not selected');
+                }
+            }
+            
+            // Additional validation for pickup
+            if (checkoutState.delivery.method === 'pickup') {
+                if (!checkoutState.delivery.pickupDate) {
+                    validationErrors.push('Pickup date not selected');
+                }
+                if (!checkoutState.delivery.pickupTime) {
+                    validationErrors.push('Pickup time not selected');
+                }
+                if (!checkoutState.delivery.pickupName) {
+                    validationErrors.push('Pickup name not provided');
+                }
+            }
+            
+            if (validationErrors.length > 0) {
+                debug('❌ Order validation failed', {
+                    errors: validationErrors,
+                    currentState: checkoutState
+                }, 'error', 'ORDER_VALIDATION');
+                
+                showAlert('Please complete all required fields before placing your order.', 'error');
+                return false;
+            }
+            
+            debug('✅ Order validation passed', null, 'validation', 'ORDER_VALIDATION_OK');
+            return true;
+        }
+        
+        function showOrderConfirmation(orderId) {
+            debug(`🎉 Showing order confirmation: ${orderId}`, null, 'success', 'ORDER_CONFIRMATION');
+            
+            // Hide checkout steps and show confirmation
+            document.querySelectorAll('.checkout-step').forEach(step => step.classList.add('hidden'));
+            
+            const mainContainer = document.querySelector('.checkout-main');
+            const confirmationHTML = `
+                <div style="text-align: center; padding: 40px 20px;">
+                    <h1 style="color: #2e7d32; margin-bottom: 20px;">✅ Order Confirmed!</h1>
+                    
+                    <div style="background: #e8f5e9; border: 1px solid #c8e6c9; border-radius: 8px; padding: 30px; margin: 30px 0;">
+                        <h2 style="color: #2e7d32; margin-bottom: 15px;">Order #${orderId}</h2>
+                        <p style="font-size: 18px; margin-bottom: 20px;">
+                            Thank you for your order! A confirmation email has been sent to <strong>${checkoutState.customer.email}</strong>
+                        </p>
+                        
+                        <div style="background: white; border-radius: 4px; padding: 20px;">
+                            <h3 style="margin-bottom: 15px;">📋 Order Summary</h3>
+                            <div style="text-align: left; max-width: 400px; margin: 0 auto;">
+                                <p><strong>Total:</strong> ${formatPrice(getTotalOrderAmount())}</p>
+                                <p><strong>Delivery:</strong> ${checkoutState.delivery.method === 'room' ? 'Deliver to Room' : 'Store Pickup'}</p>
+                                <p><strong>Payment:</strong> ${checkoutState.payment.method}</p>
+                                ${checkoutState.delivery.method === 'room' ? 
+                                    `<p><details><summary><strong>Room Details</strong></summary>
+                                        Room/Teacher: ${checkoutState.delivery.roomTeacher}<br>
+                                        Payment: ${checkoutState.delivery.roomPaymentMethod === 'online' ? 'Online' : 'Cash at Delivery'}
+                                    </details></p>` : ''}
+                                ${checkoutState.delivery.method === 'pickup' ? 
+                                    `<p><strong>Pickup:</strong> ${checkoutState.delivery.pickupDate} at ${checkoutState.delivery.pickupTime}</p>` : ''}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-top: 30px;">
+                        <button onclick="continueShopping()" class="btn btn-primary" style="margin-right: 15px;">Continue Shopping</button>
+                        <button onclick="viewOrderDetails()" class="btn btn-secondary">View Order Details</button>
+                    </div>
+                </div>
+            `;
+            
+            mainContainer.innerHTML = confirmationHTML;
+            
+            // Show debug summary
+            debugSessionSummary();
+        }
+        
+        function sendOrderConfirmationToParent(orderId) {
+            const message = {
+                type: 'ORDER_CONFIRMED',
+                orderId: orderId,
+                storeId: CONFIG.storeId,
+                orderAmount: getTotalOrderAmount(),
+                deliveryMethod: checkoutState.delivery.method,
+                paymentMethod: checkoutState.payment.method,
+                customerEmail: checkoutState.customer.email,
+                timestamp: Date.now()
+            };
+            
+            debug('📤 Sending order confirmation to parent frame', message, 'api', 'ORDER_PARENT_MESSAGE');
+            
+            try {
+                window.parent.postMessage(message, '*');
+            } catch (error) {
+                debug('❌ Failed to send order confirmation to parent', error, 'error', 'ORDER_PARENT_ERROR');
+            }
+        }
+        
+        // ========================================
+        // UTILITY FUNCTIONS
+        // ========================================
+        function continueShopping() {
+            debug('🛍️ User returning to shopping', null, 'ui', 'CONTINUE_SHOPPING');
+            
+            if (CONFIG.iframeEmbedding.allowPostMessage && window.parent !== window) {
+                // Notify parent frame to redirect to store
+                window.parent.postMessage({
+                    type: 'CONTINUE_SHOPPING',
+                    storeUrl: `https://${CONFIG.storeId}.ecwid.com`,
+                    timestamp: Date.now()
+                }, '*');
+            } else {
+                // Redirect directly
+                window.location.href = `https://${CONFIG.storeId}.ecwid.com`;
+            }
+        }
+        
+        function viewOrderDetails() {
+            debug('📄 User requesting order details', null, 'ui', 'VIEW_ORDER');
+            
+            const orderDetailsHTML = `
+                <div style="text-align: left; max-width: 800px; margin: 0 auto; padding: 20px;">
+                    <h2>📄 Order Details: ${checkoutState.orderId}</h2>
+                    
+                    <h3>🛒 Items Ordered</h3>
+                    <div style="background: #f8f8f8; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        ${checkoutState.cart.items.map(item => `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                <span>${item.product.name} x ${item.quantity}</span>
+                                <span>${formatPrice(item.product.price * item.quantity)}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <h3>💰 Order Totals</h3>
+                    <div style="background: #f8f8f8; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Subtotal:</span>
+                            <span>${formatPrice(checkoutState.cart.subtotal || 0)}</span>
+                        </div>
+                        ${checkoutState.delivery.method === 'room' ? `
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 5px; color: #856404;">
+                                <span>Delivery Fee:</span>
+                                <span>${formatPrice(checkoutState.delivery.deliveryFee)}</span>
+                            </div>
+                        ` : ''}
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 5px;">
+                            <span>Tax:</span>
+                            <span>${formatPrice(checkoutState.cart.tax || 0)}</span>
+                        </div>
+                        <div style="border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px; display: flex; justify-content: space-between; font-weight: bold;">
+                            <span>Total:</span>
+                            <span>${formatPrice(getTotalOrderAmount())}</span>
+                        </div>
+                    </div>
+                    
+                    <h3>🚚 Delivery Information</h3>
+                    <div style="background: #f8f8f8; padding: 15px; border-radius: 4px;">
+                        <p><strong>Method:</strong> ${checkoutState.delivery.method === 'room' ? 'Deliver to Room' : 'Store Pickup'}</p>
+                        ${checkoutState.delivery.method === 'room' ? `
+                            <p><strong>Room/Teacher:</strong> ${checkoutState.delivery.roomTeacher}</p>
+                            <p><strong>Teacher Permission:</strong> ${checkoutState.delivery.hasTeacherPermission ? '✅ Granted' : '❌ Not granted'}</p>
+                            <p><strong>Payment Method:</strong> ${checkoutState.delivery.roomPaymentMethod === 'online' ? 'Pay Online Now' : 'Pay at Delivery'}</p>
+                        ` : `
+                            <p><strong>Pickup Date:</strong> ${checkoutState.delivery.pickupDate}</p>
+                            <p><strong>Pickup Time:</strong> ${checkoutState.delivery.pickupTime}</p>
+                            <p><strong>Name:</strong> ${checkoutState.delivery.pickupName}</p>
+                            <p><strong>Location:</strong> School Store (Main Building, Room 101)</p>
+                        `}
+                    </div>
+                </div>
+            `;
+            
+            const container = document.querySelector('.checkout-main');
+            container.innerHTML = orderDetailsHTML + `
+                <div style="text-align: center; margin-top: 30px;">
+                    <button onclick="location.reload()" class="btn btn-primary">Start New Order</button>
+                </div>
+            `;
+        }
+        
+        // ========================================
+        // MISSING HELPER FUNCTIONS FOR POSTMESSAGE HANDLERS
+        // ========================================
+        function loadCartFromExternalSource(cartData) {
+            debug('📊 Loading cart from external source', cartData, 'cart', 'EXTERNAL_CART');
+            checkoutState.cart = cartData;
+            updateCartDisplay(cartData);
+        }
+        
+        function loadCustomerFromExternalSource(customerData) {
+            debug('👤 Loading customer data from external source', customerData, 'customer', 'EXTERNAL_CUSTOMER');
+            checkoutState.customer = { ...checkoutState.customer, ...customerData };
+            
+            // Update email field if present
+            if (customerData.email) {
+                document.getElementById('email').value = customerData.email;
+            }
+        }
+        
+        function updateCheckoutConfig(config) {
+            debug('⚙️ Updating checkout configuration from external source', config, 'config', 'EXTERNAL_CONFIG');
+            
+            // Update config safely
+            Object.keys(config).forEach(key => {
+                if (CONFIG.hasOwnProperty(key)) {
+                    CONFIG[key] = { ...CONFIG[key], ...config[key] };
+                }
+            });
+            
+            debug('Configuration updated', CONFIG, 'config', 'CONFIG_UPDATED');
+        }
+        
+        // ========================================
+        // EVENT LISTENERS AND INITIALIZATION
+        // ========================================
+        document.addEventListener('DOMContentLoaded', function() {
+            debug('🚀 DOM loaded, initializing checkout system...', {
+                timestamp: new Date().toISOString(),
+                userAgent: navigator.userAgent,
+                iframe: window !== window.parent,
+                parentOrigin: document.referrer
+            }, 'init', 'DOM_READY');
+            
+            // Check configuration completeness
+            if (!validateConfiguration()) {
+                showAlert('❌ Configuration Error: Please update your Ecwid API settings in the CONFIG object.', 'error');
+                return;
+            }
+            
+            // Initialize debug session
+            debug(`🧮 Debug session started`, {
+                sessionId: debugSession.startTime,
+                configLoaded: true,
+                debugConsoleEnabled: CONFIG.showDebugConsole
+            }, 'init', 'SESSION_START');
+            
+            // Initialize Ecwid integration
             initializeEcwid();
             
-            // Add radio option click handlers
+            // Set up radio option click handlers
             document.querySelectorAll('.radio-option').forEach(option => {
                 option.addEventListener('click', function() {
                     const radio = this.querySelector('input[type="radio"]');
-                    const group = radio.name;
-                    
-                    // Remove selected class from all options in group
-                    document.querySelectorAll(`.radio-option input[name="${group}"]`).forEach(r => {
-                        r.closest('.radio-option').classList.remove('selected');
-                    });
-                    
-                    // Add selected class to clicked option
-                    this.classList.add('selected');
-                    radio.checked = true;
+                    if (radio && !radio.checked) {
+                        radio.click(); // Trigger change event
+                    }
                 });
             });
+            
+            // Set up autocomplete dismissal
+            document.addEventListener('click', function(event) {
+                if (!event.target.closest('.autocomplete-dropdown')) {
+                    document.querySelectorAll('.autocomplete-results').forEach(results => {
+                        results.classList.remove('show');
+                    });
+                }
+            });
+            
+            debug('✅ Event listeners initialized', null, 'init', 'EVENTS_READY');
         });
+        
+        // Global error handler
+        window.addEventListener('error', function(event) {
+            debug('❌ JavaScript Error', {
+                message: event.message,
+                filename: event.filename,
+                lineno: event.lineno,
+                colno: event.colno,
+                error: event.error
+            }, 'error', 'GLOBAL_ERROR');
+        });
+        
+        // Unhandled promise rejection handler
+        window.addEventListener('unhandledrejection', function(event) {
+            debug('❌ Unhandled Promise Rejection', {
+                reason: event.reason,
+                promise: event.promise
+            }, 'error', 'PROMISE_ERROR');
+        });
+        
+        // Debug console toggle (for testing)
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey && event.shiftKey && event.code === 'KeyD') {
+                const debugConsole = document.getElementById('debug-console');
+                debugConsole.style.display = debugConsole.style.display === 'none' ? 'block' : 'none';
+                debug('🐛 Debug console toggled by hotkey', { visible: debugConsole.style.display !== 'none' }, 'config', 'DEBUG_TOGGLE');
+            }
+        });
+        
     </script>
 </body>
 </html>
