@@ -1931,38 +1931,75 @@
         }
         
         function updateCartDisplay(cart) {
-            debug('Updating cart display', { itemCount: cart?.items?.length || 0 });
+            debug('🛒 Updating cart display', { 
+                itemCount: cart?.items?.length || 0,
+                cartId: cart?.cartId || cart?.id,
+                orderId: cart?.orderId,
+                productsQuantity: cart?.productsQuantity,
+                weight: cart?.weight
+            }, 'cart', 'CART_DISPLAY_UPDATE');
             
-            if (!cart) return;
+            if (!cart) {
+                debug('❌ No cart data provided for display update', null, 'error', 'NO_CART_DATA');
+                return;
+            }
             
             const itemsContainer = document.getElementById('cart-items-container');
             const subtotalEl = document.getElementById('cart-subtotal');
             const taxEl = document.getElementById('cart-tax');
             const totalEl = document.getElementById('cart-total');
+            const shippingEl = document.getElementById('cart-shipping');
             
             // Clear existing items
             itemsContainer.innerHTML = '';
             
-            // Add each item
+            // Add each item with enhanced display and controls
             if (cart.items && cart.items.length > 0) {
                 cart.items.forEach((item, index) => {
-                    debug(`Adding cart item ${index}`, {
+                    debug(`📋 Adding cart item ${index}`, {
                         name: item.product.name,
                         quantity: item.quantity,
-                        price: item.product.price
-                    });
+                        price: item.product.price,
+                        sku: item.product.sku,
+                        options: item.options,
+                        productId: item.product.id
+                    }, 'cart', 'ITEM_DISPLAY');
                     
                     const cartItem = document.createElement('div');
                     cartItem.className = 'cart-item';
+                    cartItem.id = `cart-item-${item.product.id}`;
+                    
+                    // Create product options display
+                    let optionsDisplay = '';
+                    if (item.options && Object.keys(item.options).length > 0) {
+                        const optionHtml = Object.entries(item.options).map(([key, value]) => 
+                            `${key}: ${value}`
+                        ).join(', ');
+                        optionsDisplay = `<div class="cart-item-options" style="font-size: 11px; color: #888;">${optionHtml}</div>`;
+                    }
                     
                     const imageUrl = item.product.imageUrl || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60"%3E%3Crect width="60" height="60" fill="%23f0f0f0"/%3E%3C/svg%3E';
                     
                     cartItem.innerHTML = `
-                        <img src="${imageUrl}" alt="${item.product.name}" class="cart-item-image">
+                        <img src="${imageUrl}" alt="${item.product.name}" class="cart-item-image" 
+                             onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"60\" height=\"60\" viewBox=\"0 0 60 60\"%3E%3Crect width=\"60\" height=\"60\" fill=\"%23f0f0f0\"/%3E%3C/svg%3E'">
                         <div class="cart-item-details">
                             <div class="cart-item-name">${item.product.name}</div>
                             ${item.product.sku ? `<div class="cart-item-variant">SKU: ${item.product.sku}</div>` : ''}
-                            <div class="cart-item-qty">Qty: ${item.quantity}</div>
+                            ${optionsDisplay}
+                            
+                            <div class="cart-item-controls" style="margin-top: 8px; display: flex; align-items: center; gap: 8px;">
+                                <button onclick="changeCartItemQuantity(${item.product.id}, ${item.quantity - 1})">
+                                    <small style="background: #f0f0f0; border: 1px solid #ccc; padding: 2px 6px; border-radius: 3px; cursor: pointer;">-</small>
+                                </button>
+                                <span style="font-size: 12px;">Qty: ${item.quantity}</span>
+                                <button onclick="changeCartItemQuantity(${item.product.id}, ${item.quantity + 1})">
+                                    <small style="background: #f0f0f0; border: 1px solid #ccc; padding: 2px 6px; border-radius: 3px; cursor: pointer;">+</small>
+                                </button>
+                                <button onclick="removeCartItem(${item.product.id})" style="margin-left: 5px;">
+                                    <small style="color: #c00; font-size: 10px;">Remove</small>
+                                </button>
+                            </div>
                         </div>
                         <div class="cart-item-price">
                             ${formatPrice(item.product.price * item.quantity)}
@@ -1975,11 +2012,69 @@
                 itemsContainer.innerHTML = '<p style="text-align: center; color: #999;">No items in cart</p>';
             }
             
-            // Update totals
-            const subtotal = cart.subtotal || 0;
-            let total = subtotal;
+            // Update totals - use Ecwid.Cart.calculateTotal() for accurate totals
+            updateCartTotals(cart);
             
+            debug('✅ Cart display updated successfully', { 
+                itemCount: cart.items?.length || 0,
+                cartId: cart.cartId || cart.id,
+                subtotal: cart.subtotal
+            }, 'cart', 'CART_DISPLAY_COMPLETE');
+        }
+        
+        // Enhanced cart totals calculation using Ecwid.js API
+        function updateCartTotals(cart) {
+            debug('💰 Calculating cart totals...', null, 'cart', 'TOTALS_CALCULATION');
+            
+            // Use Ecwid.Cart.calculateTotal() for accurate totals if available
+            if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.calculateTotal) {
+                debug('🧮 Using Ecwid.Cart.calculateTotal() for accurate totals', null, 'api', 'CALCULATE_TOTAL');
+                
+                window.Ecwid.Cart.calculateTotal(function(order) {
+                    debug('✅ Cart totals calculated by Ecwid', {
+                        subtotal: order.subtotal,
+                        tax: order.tax,
+                        total: order.total,
+                        shipping: order.shipping,
+                        discount: order.discount,
+                        couponDiscount: order.couponDiscount,
+                        cartId: order.cart?.cartId
+                    }, 'cart', 'TOTALS_SUCCESS');
+                    
+                    refreshCartTotals(order);
+                });
+            } else {
+                debug('⚠️ Ecwid.Cart.calculateTotal() not available, using basic calculation', null, 'warning', 'FALLBACK_TOTALS');
+                // Fallback to basic calculation
+                refreshCartTotals(cart);
+            }
+        }
+        
+        function refreshCartTotals(orderData) {
+            const subtotalEl = document.getElementById('cart-subtotal');
+            const taxEl = document.getElementById('cart-tax');
+            const shippingEl = document.getElementById('cart-shipping');
+            const totalEl = document.getElementById('cart-total');
+            
+            const subtotal = orderData.subtotal || 0;
+            let total = orderData.total || subtotal;
+            
+            // Update displayed totals
             subtotalEl.textContent = formatPrice(subtotal);
+            
+            // Tax
+            if (orderData.tax) {
+                taxEl.textContent = formatPrice(orderData.tax);
+            } else {
+                taxEl.textContent = '—';
+            }
+            
+            // Shipping
+            if (orderData.shipping) {
+                shippingEl.textContent = formatPrice(orderData.shipping);
+            } else {
+                shippingEl.textContent = '—';
+            }
             
             // Add delivery fee if room delivery is selected
             if (checkoutState.delivery.method === 'room') {
@@ -1987,19 +2082,208 @@
                 document.getElementById('delivery-fee-line').classList.remove('hidden');
                 document.getElementById('cart-delivery-fee').textContent = formatPrice(deliveryFee);
                 total += deliveryFee;
-                debug('Added delivery fee to total', { deliveryFee, newTotal: total });
+                debug('➕ Added delivery fee to total', { deliveryFee, newTotal: total }, 'cart', 'DELIVERY_FEE_ADDED');
             } else {
                 document.getElementById('delivery-fee-line').classList.add('hidden');
             }
             
-            if (cart.tax) {
-                taxEl.textContent = formatPrice(cart.tax);
-                total += cart.tax;
-            }
-            
             totalEl.textContent = formatPrice(total);
             
-            debug('Cart display updated', { subtotal, total });
+            debug('💰 Cart totals refreshed', { subtotal, total, withDeliveryFee: checkoutState.delivery.method === 'room' }, 'cart', 'TOTALS_REFRESHED');
+        }
+        
+        // ========================================
+        // CART EDITING FUNCTIONS (Using Ecwid Storefront JS API)
+        // ========================================
+        
+        function changeCartItemQuantity(productId, newQuantity) {
+            debug(`✏️ Changing cart item quantity`, {
+                productId: productId,
+                newQuantity: newQuantity
+            }, 'cart', 'QUANTITY_CHANGE');
+            
+            if (newQuantity <= 0) {
+                removeCartItem(productId);
+                return;
+            }
+            
+            // Find the current item details first
+            window.Ecwid.Cart.get(function(cart) {
+                const currentItem = cart.items.find(item => item.product.id === productId);
+                
+                if (!currentItem) {
+                    debug('❌ Cart item not found for quantity change', { productId }, 'error', 'ITEM_NOT_FOUND');
+                    showAlert('Item not found in cart', 'error');
+                    return;
+                }
+                
+                debug('📋 Current item details', {
+                    productId: currentItem.product.id,
+                    name: currentItem.product.name,
+                    currentQuantity: currentItem.quantity,
+                    newQuantity: newQuantity,
+                    options: currentItem.options,
+                    price: currentItem.product.price
+                }, 'cart', 'ITEM_DETAILS');
+                
+                // Remove the item completely first
+                window.Ecwid.Cart.removeProduct(currentItem, function(success) {
+                    if (!success) {
+                        debug('❌ Failed to remove item for quantity change', { productId }, 'error', 'REMOVE_FAILED');
+                        showAlert('Failed to update item quantity', 'error');
+                        return;
+                    }
+                    
+                    debug('✅ Item removed for quantity change', { productId }, 'success', 'ITEM_REMOVED');
+                    
+                    // Add it back with new quantity
+                    window.Ecwid.Cart.addProduct({
+                        id: productId,
+                        quantity: newQuantity,
+                        options: currentItem.options,
+                        callback: function(success, product, cart, error) {
+                            if (success) {
+                                debug('✅ Item quantity updated successfully', {
+                                    productId: productId,
+                                    newQuantity: newQuantity,
+                                    itemCount: cart.items.length,
+                                    totalQuantity: cart.productsQuantity
+                                }, 'success', 'QUANTITY_UPDATED');
+                                
+                                // Update checkout state and refresh display
+                                checkoutState.cart = cart;
+                                updateCartDisplay(cart);
+                                
+                                showAlert(`✅ Item quantity updated to ${newQuantity}`, 'success');
+                            } else {
+                                debug('❌ Failed to add item back with new quantity', error, 'error', 'ADD_BACK_FAILED');
+                                showAlert('Failed to update item quantity: ' + error, 'error');
+                            }
+                        }
+                    });
+                });
+            });
+        }
+        
+        function removeCartItem(productId) {
+            debug(`🗑️ Removing cart item`, { productId: productId }, 'cart', 'ITEM_REMOVE');
+            
+            // Find the current item details first
+            window.Ecwid.Cart.get(function(cart) {
+                const itemToRemove = cart.items.find(item => item.product.id === productId);
+                
+                if (!itemToRemove) {
+                    debug('❌ Cart item not found for removal', { productId }, 'error', 'REMOVE_ITEM_NOT_FOUND');
+                    showAlert('Item not found in cart', 'error');
+                    return;
+                }
+                
+                debug('📋 Item to remove details', {
+                    productId: itemToRemove.product.id,
+                    name: itemToRemove.product.name,
+                    quantity: itemToRemove.quantity,
+                    options: itemToRemove.options
+                }, 'cart', 'REMOVE_DETAILS');
+                
+                // Remove the item using Ecwid.Cart.removeProduct()
+                window.Ecwid.Cart.removeProduct(itemToRemove, function(success) {
+                    if (success) {
+                        debug('✅ Cart item removed successfully', {
+                            productId: productId,
+                            remainingItems: cart.items.length - 1
+                        }, 'success', 'ITEM_REMOVED');
+                        
+                        // Reload cart data to get updated state
+                        window.Ecwid.Cart.get(function(updatedCart) {
+                            checkoutState.cart = updatedCart;
+                            updateCartDisplay(updatedCart);
+                            
+                            showAlert('✅ Item removed from cart', 'success');
+                            
+                            // Check if cart is now empty
+                            if (!updatedCart.items || updatedCart.items.length === 0) {
+                                debug('⚠️ Cart is now empty after item removal', null, 'warning', 'CART_EMPTY');
+                                showAlert('Your cart is now empty.', 'info');
+                            }
+                        });
+                    } else {
+                        debug('❌ Failed to remove cart item', { productId }, 'error', 'REMOVE_FAILED');
+                        showAlert('Failed to remove item from cart', 'error');
+                    }
+                });
+            });
+        }
+        
+        // Cart management helpers
+        function addItemToCart(productId, quantity = 1, options = {}) {
+            debug(`➕ Adding item to cart`, {
+                productId: productId,
+                quantity: quantity,
+                options: options
+            }, 'cart', 'ADD_ITEM');
+            
+            window.Ecwid.Cart.addProduct({
+                id: productId,
+                quantity: quantity,
+                options: options,
+                callback: function(success, product, cart, error) {
+                    if (success) {
+                        debug('✅ Item added to cart successfully', {
+                            productId: productId,
+                            productName: product.name,
+                            quantity: quantity,
+                            totalItems: cart.items.length
+                        }, 'success', 'ITEM_ADDED');
+                        
+                        checkoutState.cart = cart;
+                        updateCartDisplay(cart);
+                        showAlert(`✅ ${product.name} added to cart`, 'success');
+                    } else {
+                        debug('❌ Failed to add item to cart', error, 'error', 'ADD_FAILED');
+                        showAlert('Failed to add item to cart: ' + error, 'error');
+                    }
+                }
+            });
+        }
+        
+        function clearCart() {
+            debug('🗑️ Clearing entire cart', null, 'cart', 'CLEAR_CART');
+            
+            if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.clear) {
+                window.Ecwid.Cart.clear(function() {
+                    debug('✅ Cart cleared successfully', null, 'success', 'CART_CLEARED');
+                    
+                    checkoutState.cart = { items: [], subtotal: 0, total: 0 };
+                    updateCartDisplay(checkoutState.cart);
+                    showAlert('✅ Cart cleared', 'success');
+                });
+            } else {
+                debug('❌ Ecwid.Cart.clear() not available', null, 'error', 'CLEAR_NOT_AVAILABLE');
+                showAlert('Unable to clear cart. Ecwid API not available.', 'error');
+            }
+        }
+        
+        // Enhanced cart validation using Ecwid.Cart.canGotoCheckout()
+        function validateCartForCheckout() {
+            debug('✅ Validating cart for checkout', null, 'validation', 'CHECKOUT_VALIDATION');
+            
+            if (window.Ecwid && window.Ecwid.Cart && window.Ecwid.Cart.canGotoCheckout) {
+                window.Ecwid.Cart.canGotoCheckout(function(canCheckout) {
+                    debug('🔍 Ecwid checkout validation result', { canCheckout }, 'validation', 'CHECKOUT_RESULT');
+                    
+                    if (!canCheckout) {
+                        debug('❌ Cart validation failed', null, 'error', 'CHECKOUT_INVALID');
+                        showAlert('Your cart is not ready for checkout. Please check your items.', 'error');
+                        return false;
+                    }
+                    
+                    debug('✅ Cart validation passed', null, 'success', 'CHECKOUT_VALID');
+                    return true;
+                });
+            } else {
+                debug('⚠️ Ecwid.Cart.canGotoCheckout() not available, proceeding anyway', null, 'warning', 'CHECKOUT_SKIP');
+                return true;
+            }
         }
         
         // ========================================
